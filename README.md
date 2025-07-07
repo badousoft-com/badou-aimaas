@@ -1,4 +1,4 @@
-![](http://extranet.badousoft.com:32080/badouai-maas-platform/attach/action/attachsupport/downloadAttach.do?attachId=8a74807897df60130197e3bc1b421882)
+![](assets/AIMAAS-HEAD.png)
 
 # 										   				  **赋能应用，开启智能新时代 🤖**
 
