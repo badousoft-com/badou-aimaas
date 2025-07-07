@@ -1,14 +1,6 @@
-![image-20250707115408381](C:\Users\16532\AppData\Roaming\Typora\typora-user-images\image-20250707115408381.png)
+![](http://extranet.badousoft.com:32080/badouai-maas-platform/attach/action/attachsupport/downloadAttach.do?attachId=8a74807897df60130197e3bc1b421882)
 
-# 					**赋能应用，开启智能新时代 🤖**
-
-
-
-https://img.shields.io/github/stars/aimaas/aimaas-core?style=social
- https://img.shields.io/badge/%E6%96%87%E6%A1%A3-%F0%9F%93%95-blue
- https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-Apache_2.0-green
- https://badge.fury.io/py/aimaas.svg
- https://img.shields.io/discord/1303749220842340412?color=7289DA&label=Discord&logo=discord&logoColor=white
+# 										   				  **赋能应用，开启智能新时代 🤖**
 
 🌐 **AIMaaS** 是部署、管理和调用 AI 模型作为云服务的最简途径。基于 **Model-as-a-Service（MaaS）** 范式，它抽象了 AI 基础设施的复杂性，同时提供企业级能力。
 
@@ -95,10 +87,6 @@ print(response.json())
 
 #### 🧠 数据全链路层（Data Lifecycle Layer）
 
-**新增核心模块，突出数据管理能力**
-
-
-
 - 数据采集与标注
   - 多源数据接入平台（API/SDK/ETL 工具对接业务系统）
   - 可视化标注工作台（支持文本 / 图像 / 语音标注，集成主动学习）
@@ -153,8 +141,6 @@ print(response.json())
 
 ### 金融风控检测
 
-https://via.placeholder.com/600x300?text=%E9%87%91%E8%9E%8D%E9%A3%8E%E6%8E%A7+%E5%AE%9E%E6%97%B6%E6%A3%80%E6%B5%8B%E7%B3%BB%E7%BB%9F
-
 ```python
 # 部署风控模型组合
 service.deploy_ensemble(
@@ -164,8 +150,6 @@ service.deploy_ensemble(
 ```
 
 ### 医疗影像分析
-
-https://via.placeholder.com/600x300?text=DICOM+%E5%BD%B1%E5%83%8F%E6%99%BA%E8%83%BD%E5%88%86%E6%9E%90
 
 ```python
 # 批量处理医学影像
@@ -177,8 +161,6 @@ results = service.batch_predict(
 ```
 
 ### 用户情感分析
-
-https://via.placeholder.com/600x300?text=%E7%A4%BE%E4%BA%A4%E5%AA%92%E4%BD%93+%E6%83%85%E6%84%9F%E5%88%86%E6%9E%90%E6%B5%81%E6%B0%B4%E7%BA%BF
 
 ```python
 # 构建实时分析流水线
