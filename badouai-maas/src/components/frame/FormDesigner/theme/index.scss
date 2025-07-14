@@ -1,0 +1,33 @@
+// 主题目前用于表单设计器
+
+:root {
+    --primary: #155674;
+    --primaryHover: #155674;
+    --primaryShadow: #155674;
+    --primaryShadowHover: #155674;
+    --primarySimple: #155674;
+    --sidebar: #39ab9d;
+    --sidebarColor: #fff;
+    --sidebarPart: rgba(255,255,255,0.8);
+    --sidebarPartColor: #fff;
+    --dragItemBg: rgba(255,224,1,0.3);
+    --dragTipPanel: $dragTipPanel;
+}
+// 主题色
+$fd-primary: var(--primary);
+$fd-primary-hover: var(--primaryHover);
+$fd-primary-shadow: var(--primaryShadow);
+$fd-primary-shadow-hover: var(--primaryShadowHover);
+$fd-primary-simple: var(--primarySimple);
+// 侧栏背景色
+$fd-sidebar: var(--sidebar);
+// 侧边栏文字颜色
+$fd-sidebar-color: var(--sidebarColor);
+// 侧栏模块内容背景色
+$fd-sidebar-part: var(--sidebarPart);
+// 侧栏模块内容文字颜色
+$fd-sidebar-part-color: var(--sidebarPartColor);
+// 操作拖拽-提示面板背景色
+$fd-drag-tipPanel: var(--dragTipPanel);
+// 拖拽元素悬浮背景
+$fd-dragItem-Bg: var(--dragItemBg);

@@ -1,0 +1,50 @@
+// 存储混合类：非全局引入，使用时需要引入当前文件
+// @import "~@/styles/mixin.scss";
+
+@mixin clearfix {
+    &:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+}
+
+@mixin scrollBar {
+    &::-webkit-scrollbar-track-piece {
+        background: #d3dce6;
+    }
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #99a9bf;
+        border-radius: 20px;
+    }
+}
+
+@mixin relative {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+@mixin setPlaceholderColor ($color) {
+    &::-webkit-input-placeholder {
+        /* WebKit browsers */
+        color: $color !important;
+    }
+    &::-moz-placeholder {
+        /* Mozilla Firefox 4 to 18 */
+        color: $color !important;
+    }
+    &::-moz-placeholder {
+        /* Mozilla Firefox 19+ */
+        color: $color !important;
+    }
+    &::-ms-input-placeholder {
+        /* Internet Explorer 10+ */
+        color: $color !important;
+    }
+}

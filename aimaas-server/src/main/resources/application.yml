@@ -1,0 +1,73 @@
+##============================
+#Spring相关配置
+#============================
+spring:
+  application:
+    name: @project.build.finalName@
+  profiles:
+    include:
+      - badou
+      - datasource
+      - cache
+      - email
+      - jasyp
+      - jpa
+      - jwt
+      - log
+      - redis
+      - server
+      - quartz
+  #资源相关配置
+  resources:
+    #静态资源地址配置
+    static-locations: classpath:/
+  #mvc相关配置
+  mvc:
+    #mvc静态资源配置
+    static-path-pattern: /js/**
+  #修改上传文件大小限制
+  servlet:
+    multipart:
+      max-file-size : @maven.spring.servlet.multipart.maxfilesize@
+      max-request-size : @maven.spring.servlet.multipart.maxrequestsize@
+      enabled: @maven.spring.servlet.multipart.enabled@
+  #请求相关接口
+  http:
+    #编码规则
+    encoding:
+      force: true
+      charset: UTF-8
+      enabled: true
+
+  resources:
+    #静态资源地址配置
+    static-locations: classpath:/
+  #mvc相关配置
+  mvc:
+    #mvc静态资源配置
+    static-path-pattern: /js/**
+  #修改上传文件大小限制
+  servlet:
+    multipart:
+      max-file-size : @maven.spring.servlet.multipart.maxfilesize@
+      max-request-size : @maven.spring.servlet.multipart.maxrequestsize@
+      enabled: @maven.spring.servlet.multipart.enabled@
+  #请求相关接口
+  http:
+    #编码规则
+    encoding:
+      force: true
+      charset: UTF-8
+      enabled: true
+  rabbitmq:
+    host: @maven.spring.rabbitmq.host@
+    port: @maven.spring.rabbitmq.port@
+    username: @maven.spring.rabbitmq.username@
+    password: @maven.spring.rabbitmq.password@
+    #任务监听队列
+    plan-queue: @maven.spring.rabbitmq.plan.queue@_${random.long}
+    #任务监听队列
+    modelapp-queue: @maven.spring.rabbitmq.modelapp.queue@_${random.long}
+    command-queue: @maven.spring.rabbitmq.command.queue@_${random.long}
+    evaluation-queue: @maven.spring.rabbitmq.evaluation.queue@_${random.long}
+    modelsync-queue: @maven.spring.rabbitmq.modelsync.queue@_${random.long}

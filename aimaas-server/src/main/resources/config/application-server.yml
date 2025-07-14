@@ -1,0 +1,13 @@
+#============================
+#服务相关配置
+#============================
+server:
+  #端口号
+  port: @maven.server.port@
+  #session有效期，默认为1个小时
+  session:
+    timeout: @maven.server.session.timeout@
+  #tomcat相关配置
+  tomcat:
+    #编码配置
+    uri-encoding: @maven.tomcat.uriEncoding@

@@ -1,0 +1,16 @@
+badou:
+  #请求相关配置
+  request:
+    enabled: @maven.badou.request.enabled@
+    cross:
+      allow: @maven.spring.cross.allow@
+    excludes:
+      login: /project/project/projectapplist/downloadAttach;/v2/**;*/ueditor*;*swagger*;/detect;/detect/*;*.js;*.jpg;*.htm;*.html;*.gif;*.png;*.css;*.swf;/web/*jsp;*/login.jsp;*/login;*/login;*/logout;*/loginAccredit;*/403.jsp;*/500.jsp;*/404.jsp;/fileupload/attachupload/*;/validate/*/*;/exportcompany/exportcompanylist/search;/exportcompany/exportcompanyedit/detail;/validate/*/*;/security/ssl/token/*;*/change_browser.jsp;/cfg/basedefineedit/downloadImgCache.do;/jdbc/common/appmodule*/*;/system/security/userregister/*;/attach/action/attachsupport/downloadAttach;/attach/action/attachsupport/downloadAttach.do;/system/security/logon/*;/system/security/logon/findSystemInfo.do;/report/*;/system/security/logon/createCode.do;/uniapp/mobilelogon/logon.do;/uniapp/mobilebaseconfig/**;/uniapp/mobileoutwardstyle/listAppOutwardStyle.do;/uniapp/index/**;/error;
+      nonce: /cfg/basedefineedit/downloadImgCache.do;/attach/action/attachsupport/downloadAttach.do;/error;
+      sign: /module/design/moduledesignsave/saveField.do;/panel/block/panelblocksave/saveSingleBlock.do;/panel/block/panelblocksave/savePanelBlockLink;/cfg/basedefineedit/downloadImgCache.do;/attach/action/attachsupport/downloadAttach.do;
+  #RSA相关配置
+  rsa:
+    public-key-path: @maven.badou.rsa.publicKeyPath@
+    private-key-path: @maven.badou.rsa.privateKeyPath@
+  oauth2:
+    auth-center-url: @maven.badou.oauth2.auth-center-url@

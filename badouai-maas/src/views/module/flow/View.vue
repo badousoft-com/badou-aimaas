@@ -1,0 +1,41 @@
+// 下一环节：处理人审核页面
+<template>
+    <div class="bd-page-edit">
+        <fix-bottom-page>
+            <!-- 核心内容区域 start-->
+            <module-edit-code
+                ref="moduleEditCode"
+                :mdCode="mdCode"
+                :detailId="detailId"
+                :defaultParamsObj="query"
+                :defaultBtnList="[]"
+                :isView="isView"
+                :customSetting="{ buttons: [] }"
+                @beforeModuleRender="beforeModuleRender">
+            </module-edit-code>
+            <flow-trace :boId="_flowItem.boId" :flowId="flowId" class="mar-t"></flow-trace>
+            <!-- 核心内容区域 end-->
+            <template v-slot:footer>
+                <flow-router-btn
+                    :flowId="flowId"
+                    :worklistId="worklistId"
+                    :workItem="_flowItem"
+                    :hasSaveBtn="false"
+                    ref="flowRouteBtnRef">
+                </flow-router-btn>
+            </template>
+        </fix-bottom-page>
+    </div>
+</template>
+<script>
+import WorkVerify from '@/views/module/flow/part/WorkVerify'
+export default {
+    mixins: [WorkVerify],
+    data () {
+        return {
+            // 是否查看状态
+            isView: true
+        }
+    },
+}
+</script>

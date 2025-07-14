@@ -1,0 +1,11 @@
+spring:
+  kubernetes:
+    config:
+      #默认的连接配置
+      path: kubernetes/kubernetes.yaml
+      #默认的容器副本数
+      replicas: 1
+      #默认的工作空间
+      nameSpace: test
+      #项目前缀
+      projectPreFix: badousoft

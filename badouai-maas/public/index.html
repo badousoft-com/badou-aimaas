@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <!-- 如果有安装 Google Chrome Frame 插件则强制为Chromium内核，否则强制本机支持的最高版本IE内核，作用于IE浏览器 -->
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1"/>
+        <!-- 强制Chromium内核，作用于360浏览器、QQ浏览器等国产双核浏览器 -->
+        <meta name="renderer" content="webkit"/>
+        <!-- 强制Chromium内核，作用于其他双核浏览器 -->
+        <meta name="force-rendering" content="webkit"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <!-- 告诉谷歌浏览器，不提供自动翻译功能 -->
+        <meta name="google" content="notranslate" />
+        <!-- <link rel="icon" href="<%= BASE_URL %>favicon.ico"> -->
+        <!-- <title><%= webpackConfig.name %></title> -->
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            #init-shadow {
+                background:hsla(207, 97%, 41%, 1);
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 9999999;
+                width: 100%;
+                height: 100%;
+                opacity: 1;
+                transition: opacity 1s cubic-bezier(.86,.06,1,.35);
+            }
+            .init-shadow__main {
+                display: inline-block;
+                position: relative;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                text-align: center
+            }
+            .init-shadow_img {
+                width: 80px;
+            }
+            html,body,#app{
+                height: 100%;
+            }
+        </style>
+        <!-- 样式文件优先加载 -->
+        <% if (htmlWebpackPlugin.options.isUseCDN) { %>
+            <link href="https://lib.baomitu.com/element-ui/2.13.0/theme-chalk/index.css" rel="stylesheet">
+        <% } %>
+    </head>
+    <body>
+        <!-- 初始资源加载框 -->
+        <div id="init-shadow">
+            <div class="init-shadow__main point">
+                <img src="./static/image/loadingResource.gif" class="init-shadow_img" alt="" >
+            </div>
+        </div>
+        <noscript>
+            <strong>We're sorry but <%= webpackConfig.name %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+        </noscript>
+        <div id="app"></div>
+        <% if (htmlWebpackPlugin.options.isUseCDN) { %>
+            <!-- cdn资源地址： https://cdn.baomitu.com -->
+            <!-- cdn资源地址：https://cdnjs.com/ -->
+            <script src="https://lib.baomitu.com/vue/2.6.10/vue.min.js"></script>
+            <script>!window.Vue && document.write(unescape('%3Cscript src="./static/cdnLocalData/vue.min.js"%3E%3C/script%3E'))</script>
+            <script src="https://lib.baomitu.com/axios/0.19.2/axios.min.js"></script>
+            <script>!window.axios && document.write(unescape('%3Cscript src="./static/cdnLocalData/axios.min.js"%3E%3C/script%3E'))</script>
+            <script src="https://lib.baomitu.com/vuex/3.1.0/vuex.min.js"></script>
+            <script>!window.Vuex && document.write(unescape('%3Cscript src="./static/cdnLocalData/vuex.min.js"%3E%3C/script%3E'))</script>
+            <script src="https://lib.baomitu.com/vue-router/3.1.0/vue-router.min.js"></script>
+            <script>!window.VueRouter && document.write(unescape('%3Cscript src="./static/cdnLocalData/vue-router.min.js"%3E%3C/script%3E'))</script>
+            <script src="https://lib.baomitu.com/element-ui/2.13.0/index.js"></script>
+            <script>!window.ELEMENT && document.write(unescape('%3Cscript src="./static/cdnLocalData/element-ui/index.js"%3E%3C/script%3E'))</script>
+            <script>!window.ELEMENT && document.write(unescape('%3Clink rel="stylesheet" href="./static/cdnLocalData/element-ui/theme-chalk.css"%3E'))</script>
+            <!-- <script src="https://lib.baomitu.com/jquery/1.12.1/jquery.min.js"></script>
+            <script>!(window.$ || window.jquery) && document.write(unescape('%3Cscript src="./static/cdnLocalData/jquery.min.js"%3E%3C/script%3E'))</script> -->
+            <script src="https://lib.baomitu.com/vee-validate/2.2.15/vee-validate.minimal.min.js"></script>
+            <script src="https://lib.baomitu.com/vee-validate/2.2.15/locale/zh_CN.js"></script>
+            <script>!window.VeeValidate && document.write(unescape('%3Cscript src="./static/cdnLocalData/vee-validate/minimal.min.js"%3E%3C/script%3E'))</script>
+            <script>!window.VeeValidate && document.write(unescape('%3Cscript src="./static/cdnLocalData/vee-validate/zh_CN.js"%3E%3C/script%3E'))</script>
+            <script src="https://lib.baomitu.com/echarts/4.9.0-rc.1/echarts.min.js"></script>
+            <script>!window.echarts && document.write(unescape('%3Cscript src="./static/cdnLocalData/echarts.min.js"%3E%3C/script%3E'))</script>
+            <!-- <script src="https://lib.baomitu.com/echarts-gl/1.1.2/echarts-gl.min.js"></script>
+            <script>!window.echartsGl && document.write(unescape('%3Cscript src="./static/cdnLocalData/echarts-gl.min.js"%3E%3C/script%3E'))</script> -->
+            <!-- <script src="https://lib.baomitu.com/dagre-d3/0.6.4/dagre-d3.min.js"></script>
+            <script>!window.dagreD3 && document.write(unescape('%3Cscript src="./static/cdnLocalData/dagre-d3.min.js"%3E%3C/script%3E'))</script>
+            <script src="https://lib.baomitu.com/d3/5.16.0/d3.min.js"></script>
+            <script>!window.d3 && document.write(unescape('%3Cscript src="./static/cdnLocalData/d3.min.js"%3E%3C/script%3E'))</script>
+            <script src="https://lib.baomitu.com/crypto-js/3.3.0/crypto-js.min.js"></script>
+            <script>!window.CryptoJS && document.write(unescape('%3Cscript src="./static/cdnLocalData/crypto-js.min.js"%3E%3C/script%3E'))</script> -->
+            <!-- <script src="https://lib.baomitu.com/jsencrypt/3.2.1/jsencrypt.min.js"></script>
+            <script>!window.JSEncrypt && document.write(unescape('%3Cscript src="./static/cdnLocalData/jsencrypt.min.js"%3E%3C/script%3E'))</script> -->
+            <!-- <script src="https://lib.baomitu.com/sql-formatter/4.0.2/sql-formatter.min.js"></script>
+            <script>!window.sqlFormatter && document.write(unescape('%3Cscript src="./static/cdnLocalData/sql-formatter.min.js"%3E%3C/script%3E'))</script> -->
+            <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js" integrity="sha512-Eezs+g9Lq4TCCq0wae01s9PuNWzHYoCMkE97e2qdkYthpI0pzC3UGB03lgEHn2XM85hDOUF6qgqqszs+iXU4UA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/Vue.Draggable/2.24.3/vuedraggable.umd.min.js" integrity="sha512-VyYlTbK139H2WlmJs3QVOtdp0lcAIpPgGVFZrXUOBfqJoBA9AsfAHgSDPsYCo71jtFDW9pphEOlERL4ibDnUrQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <script>!window.vuedraggable && document.write(unescape('%3Cscript src="./static/cdnLocalData/vuedraggable/sortable.min.js"%3E%3C/script%3E'))</script>
+            <script>!window.vuedraggable && document.write(unescape('%3Cscript src="./static/cdnLocalData/vuedraggable/vuedraggable.umd.min.js"%3E%3C/script%3E'))</script> -->
+        <% } %>
+    </body>
+</html>

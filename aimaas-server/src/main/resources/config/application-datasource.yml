@@ -1,0 +1,54 @@
+spring:
+  #数据源配置
+  datasource:
+    #连接地址
+    url: @maven.db.jdbc.connection.url@
+    #用户名
+    username: @maven.db.jdbc.username@
+    #密码
+    password: @maven.db.jdbc.password@
+    #驱动
+    driver-class-name: @maven.db.jdbc.connection.driver@
+    #通过这句配置将druid连接池引入到我们的配置中，spring会尽可能判断类型是什么，然后根据情况去匹配驱动类。
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: @maven.druid.initialSize@  # 初始化大小
+      min-idle: @maven.druid.minIdle@  # 最小
+      max-active: @maven.druid.maxActive@  # 最大
+      max-wait: @maven.druid.maxWait@  # 配置获取连接等待超时的时间
+      time-between-eviction-runs-millis: @maven.druid.timeBetweenEvictionRunsMillis@  # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+      # 自动记录日志到日志文件中的间隔时间，单位是毫秒(默认设置为一天记录一次)
+      time-between-log-stats-millis: 86400000
+      # 开启自动记录日志到日志文件的情况下必须关闭改功能，不然自动记录会不起效
+      use-global-data-source-stat: false
+      min-evictable-idle-time-millis: @maven.druid.minEvictableIdleTimeMillis@  # 指定一个空闲连接最少空闲多久后可被清除，单位是毫秒
+      validationQuery: @maven.druid.validationQuery@
+      test-while-idle: @maven.druid.testWhileIdle@  # 当连接空闲时，是否执行连接测试
+      test-on-borrow: @maven.druid.testOnBorrow@  # 当从连接池借用连接时，是否测试该连接
+      test-on-return: @maven.druid.testOnReturn@  # 在连接归还到连接池时是否测试该连接
+      filters: @maven.druid.filters@  # 配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
+      poolPreparedStatements: @maven.druid.poolPreparedStatements@ # 打开PSCache，并且指定每个连接上PSCache的大小
+      maxPoolPreparedStatementPerConnectionSize: @maven.druid.maxPoolPreparedStatementPerConnectionSize@
+      maxOpenPreparedStatements: @maven.druid.maxOpenPreparedStatements@
+      # 通过connectProperties属性来打开mergeSql功能；慢SQL记录
+      connectionProperties: @maven.druid.connectionProperties@
+      # 合并多个DruidDataSource的监控数据
+      #use-global-data-source-stat: true
+      #WebStatFilter配置，说明请参考Druid Wiki，配置_配置WebStatFilter
+      web-stat-filter:
+        enabled: @maven.druid.webStatFilter.enabled@ #是否启用StatFilter默认值true
+        url-pattern: /*
+        exclusions: /druid/*,*.js,*.gif,*.jpg,*.bmp,*.png,*.css,*.icshao
+        session-stat-enable: @maven.druid.webStatFilter.sessionStatEnable@
+        session-stat-max-count: @maven.druid.webStatFilter.sessionStatMaxCount@
+        profile-enable: true
+        principal-session-name: BadouUserInfo
+      #StatViewServlet配置，说明请参考Druid Wiki，配置_StatViewServlet配置
+      stat-view-servlet:
+        allow: ""
+        enabled: @maven.druid.statViewServlet.enabled@ #是否启用StatViewServlet默认值true
+        url-pattern: /druid/*
+        reset-enable: @maven.druid.statViewServlet.resetEnable@
+        #监控后台登录账户密码
+        login-username: 123456
+        login-password: 123456

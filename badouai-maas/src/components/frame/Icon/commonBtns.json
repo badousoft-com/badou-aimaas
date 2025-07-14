@@ -1,0 +1,25 @@
+[
+    { "type": "primary", "name": "搜索",  "id": "search", "icon": "search" },
+    { "type": "primary", "name": "查询",  "id": "query", "icon": "query" },
+    { "type": "primary", "name": "新增",  "id": "add", "icon": "add" },
+    { "type": "primary", "name": "查看",  "id": "view", "icon": "view" },
+    { "type": "primary", "name": "返回",  "id": "back", "icon": "back" },
+    { "type": "primary", "name": "保存",  "id": "save", "icon": "save" },
+    { "type": "primary", "name": "导出",  "id": "export", "icon": "export" },
+    { "type": "primary", "name": "下一步",  "id": "nextStep", "icon": "nextStep" },
+    { "type": "primary", "name": "上一步",  "id": "prevStep", "icon": "prevStep" },
+    { "type": "primary", "name": "提交",  "id": "submit", "icon": "submit" },
+    { "type": "primary", "name": "解冻", "id": "unfreeze", "icon": "unfreeze" },
+    { "type": "primary", "name": "上传", "id": "upload", "icon": "upload" },
+    { "type": "primary", "name": "下载", "id": "download", "icon": "download" },
+
+    { "type": "warning", "name": "重置",  "id": "reset", "icon": "reset" },
+    { "type": "warning", "name": "修改",  "id": "edit", "icon": "edit" },
+    { "type": "warning", "name": "编辑",  "id": "edit", "icon": "edit" },
+    { "type": "warning", "name": "取消",  "id": "cancel", "icon": "cancel" },
+
+    { "type": "danger", "name": "删除",  "id": "delete", "icon": "delete" },
+    { "type": "danger", "name": "退出",  "id": "exit", "icon": "exit" },
+    { "type": "danger", "name": "关闭",  "id": "close", "icon": "close" },
+    { "type": "danger", "name": "冻结", "id": "freeze", "icon": "freeze" }
+]

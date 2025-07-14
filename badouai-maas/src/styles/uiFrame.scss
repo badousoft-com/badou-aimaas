@@ -1,0 +1,491 @@
+// 框架使用的主UI框架的样式修改，不参杂自定义类
+// 框架项目主UI框架为elementUI： https://element.eleme.cn/#/zh-CN
+
+// ********************************************************
+// start: 根据主题theme.scss文件中定义的变化，修改elementUI风格
+$--color-primary: $primary;
+$--color-danger: $danger;
+$--color-warning: $warning;
+$--color-success: $success;
+/* 改变 icon 字体路径变量，必需 */
+$--font-path: '~element-ui/lib/theme-chalk/fonts';
+$--border-color-base: $borderColor;
+@import "~element-ui/packages/theme-chalk/src/index";
+// end: 根据主题theme.scss文件中定义的变化，修改elementUI风格
+// ********************************************************
+
+// **********************************面包屑组件el-breadcrumb 
+.el-breadcrumb__inner,
+.el-breadcrumb__inner a {
+    font-weight: 400 !important;
+}
+
+
+// ***************************************上传el-upload组件
+.el-upload {
+    input[type="file"] {
+        display: none !important;
+    }
+}
+.el-upload__input {
+    display: none;
+}
+// refine element ui upload
+.upload-container {
+    .el-upload {
+        width: 100%;
+        .el-upload-dragger {
+            width: 100%;
+            height: 200px;
+        }
+    }
+}
+
+// ***************************************弹窗el-dialog组件
+// *******************************************************
+// to fixed https://github.com/ElemeFE/element/issues/2461
+.el-dialog {
+    transform: none;
+    left: 0;
+    position: relative;
+    margin: 0 auto;
+    .el-dialog__header {
+        padding: $padding;
+        .el-dialog__title {
+            color: $fontCL;
+        }
+        .el-dialog__headerbtn {
+            top: $padding;
+            right: $padding;
+        }
+    }
+}
+
+// ***********************************下拉菜单el-dropdown
+.el-dropdown-menu {
+    max-height: 400px;
+    overflow: auto;
+    a {
+        display: block;
+    }
+}
+
+// ******************************日期选择器el-date-picker
+.el-range-separator {
+    box-sizing: content-box;
+}
+
+// ****************************************下拉el-select
+// 下拉多选，文本过长时溢出样式优化
+.el-select {
+    overflow: hidden !important;
+}
+
+
+// ****************************************下拉el-checkbox
+// 让checkbox复选框内容项与打勾间的距离  与  radio看起来一致宽
+.el-checkbox__label {
+    padding-left: 8px;
+}
+
+// ****************************************按钮el-button
+.el-button {
+    border-radius: $borderRadius;
+    // bdRule-button
+    &.el-button--small {
+        height: $inputHeight;
+        line-height: $inputHeight;
+        // 优化小屏上按钮展示效果:垂直居中
+        @media screen and (max-width: $screen-middle) {
+            line-height: $inputHeight - 2px;
+        }
+        padding: 0 10px;
+    }
+    // 处理按钮使用loading icon时与现有图标规格不一致，导致按钮抖动bug
+    &.is-loading {
+        [class*="el-icon-"] {
+            & + span {
+                margin-left: 2px;
+            }
+        }
+        
+    }
+}
+.el-button--medium {
+    height: $inputHeight;
+    line-height: $inputHeight;
+    padding: 0 10px;
+    .el-input__icon {
+        line-height: $inputHeight;
+    }
+}
+.el-button + .el-button {
+    margin-left: $space;
+}
+
+
+// *************************************输入域 el-textarea
+.el-textarea .el-input__count {
+    line-height: 1;
+    display: inline-block;
+}
+
+// *************************************滚动条el-scrollbar
+.el-scrollbar {
+    height: 100%;
+    &.hiddenX {
+        .el-scrollbar__wrap {
+            overflow-x: hidden;
+        }
+    }
+}
+
+// ******************************************表格 el-table
+// el-table添加border属性，支持可以自由拖拽一列的宽度
+// 不希望表格有边框，所以开放border属性，并且控制部分border带来的样式  --start
+.el-table--border {
+    border: none;
+    &::before,
+    &::after {
+        display: none;
+    }
+    th {
+        &:hover {
+            border-right: 1px solid $tableLineColor;
+        }
+    }
+    tbody {
+        td {
+            border-right: none;
+        }
+    }
+    // 多级表头时，将边框放出来，避免展示不协调
+    &:not(.no-th-border) {
+        th {
+            border-right: 1px solid rgba(0, 0, 0, 0);
+            &:hover {
+                border-right: 1px solid $tableLineColor;
+            }
+        }
+    }
+}
+// 不希望表格有边框，所以开放border属性，并且控制部分border带来的样式  --end
+.el-table {
+    &::before {
+        background-color: #fff;
+    }
+    // 限制当不含有remove-tr-animation类名时才设置tr相关悬浮效果
+    &:not(.remove-tr-animation) {
+        tbody {
+            tr {
+                // TODO：添加.hover-row临时方案：固定列hover样式处理
+                &:hover,
+                &.hover-row {
+                    // 行hover时设置td背景色与阴影，构造整行tr效果
+                    & > td {
+                        // hover时清除边框线色
+                        // border-top: 1px solid #fff; 这里要注释不然页面hover的时候抖来抖去的
+                        background-color: #fff !important;
+                        box-shadow: 14px 0px 16px 2px rgba(0, 0, 0, 0.12) !important;
+                        transition: all 0s !important;
+                    }
+                    // 构造tr整行悬浮效果，需要清除上边框与下边框（下边框就是下一个tr下td的borderTop）
+                    & + tr {
+                        td {
+                            // hover时清除边框线色
+                            border-top: 1px solid #fff;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // 解决使用固定列时底部多了一小条边框 --start
+    .el-table__fixed {
+        &::before {
+            content: none;
+        }
+    }
+    // 解决使用固定列时底部多了一小条边框 --end
+    // start-解决合计行遮挡水平滚动条，恰好滚动条所在的区域在3个内容类之外，所以设置核心元素整块可穿透，再设置内容3个类不可穿透，这样就唯独进度条可以穿透触发到，进而进行拖拽滚动
+    .el-table__fixed,
+    .el-table__fixed-right {
+        pointer-events: none;
+        .el-table__fixed-header-wrapper,
+        .el-table__fixed-body-wrapper,
+        .el-table__fixed-footer-wrapper {
+            pointer-events: auto;
+        }
+    }
+    // end-解决合计行遮挡水平滚动条，恰好滚动条所在的区域在3个内容类之外，所以设置核心元素整块可穿透，再设置内容3个类不可穿透，这样就唯独进度条可以穿透触发到，进而进行拖拽滚动
+    thead {
+        th {
+            background: $tableTheadBg;
+            font-size: $font;
+            .cell {
+                font-weight: bold;
+                color: #111;
+            }
+        }
+    }
+    tbody {
+        tr {
+            font-size: $font;
+            &:nth-child(2n) {
+                background: $tableStripeBg;
+            }
+            td {
+                border-top: 1px solid #f1f1f1;
+                border-bottom: none;
+                .cell {
+                    color: #333;
+                }
+            }
+            // 避免边框线条重复，需要特殊处理第一个tr
+            &:first-child {
+                td {
+                    border-top: none;
+                }
+                &:hover {
+                    td {
+                        border-top: none;
+                    }
+                }
+            }
+            // 避免边框线条重复，需要特殊处理最后一个tr
+            &:last-child {
+                td {
+                    border-bottom: 1px solid #f1f1f1;
+                }
+                &:hover {
+                    td {
+                        border-bottom: 1px solid #fff;
+                    }
+                }
+            }
+        }
+    }
+    .el-table__fixed-left,
+    .el-table__fixed-right {
+        &::before {
+            content: none;
+        }
+    }
+    // 处理排序图标样式
+    .caret-wrapper {
+        height: 18px;
+        width: 18px;
+        .sort-caret {
+            left: 4px;
+            &.ascending {
+                top: -3px;
+            }
+            &.descending {
+                bottom: -1px;
+            }
+        }
+    }
+    // 调整表头的选择框与内容行的选择框不对齐
+    .el-table-column--selection {
+        .cell {
+            padding-right: 14px !important;
+        }
+    }
+}
+.el-table th,
+.el-table td {
+    padding: 6px 0;
+    text-align: center;
+}
+.el-table__empty-block {
+    // 当搜索不到列表数据时，列表宽度可能会随着表头元素超出，没数据时就直接按父级宽度来，这样提示也会正中间
+    width: 100% !important;
+}
+
+// *************************************提示信息弹窗el-message
+.el-message-box {
+    @media screen and (max-width: 800px) {
+        width: 90%;
+    }
+    .el-message-box__header {
+        .el-message-box__title {
+            color: $fontCL;
+        }
+    }
+    .el-message-box__content {
+        color: $fontC;
+    }
+}
+
+// *************************************滚动条组件el-scrollbar
+.el-scrollbar__view {
+    height: 100%;
+}
+
+// **************************************************el-tabs
+.el-tabs__nav-wrap {
+    &::after {
+        height: 1px;
+        background-color: $lineColor;
+    }
+}
+.el-tabs__item {
+    color: $fontC;
+}
+
+// *************************************分页组件el-pagination
+.el-pagination {
+    .btn-prev,
+    .el-pager,
+    .btn-next,
+    .el-pagination__jump {
+        float: right;
+    }
+}
+
+// *************************************分页组件el-popover
+.el-popover__reference {
+    outline: none!important; // 统一不加outline，不然点击活跃时会生成黑色边框（浏览器影响）
+}
+
+// *********************************************表单 el-form
+.el-form {
+    .el-form-item {
+        margin-bottom: 22px;
+    }
+}
+.el-form-item__error {
+    // 设置表单检验报错文字，内容过多时不被下一行遮挡
+    position: absolute;
+    z-index: 1;
+    bottom: 0;
+    right: 0;
+    left: unset;
+}
+.el-form-item__content {
+    min-height: $inputHeight;
+}
+.el-input--medium {
+    .el-input__inner {
+        height: $inputHeight;
+        line-height: $inputHeight;
+    }
+    .el-input__icon {
+        line-height: $inputHeight;
+    }
+}
+.el-input--small {
+    .el-input__inner {
+        height: $inputHeight;
+        line-height: $inputHeight;
+    }
+    .el-input__icon {
+        line-height: $inputHeight;
+        :before {
+            vertical-align: middle;
+        }
+    }
+}
+// 解决input中前置与后置图标与文本内容无法水平对齐的问题
+.el-input__icon {
+    &:before {
+        vertical-align: middle;
+    }
+}
+// 处理时间选择器中图标位置异常问题
+.el-date-editor {
+    // 默认是固定220px，这里取消掉，修改为按父亲的来
+    &.el-input,
+    &.el-input__inner {
+        width: 100%;
+    }
+    .el-input__prefix {
+        top: -2px;
+    }
+}
+
+// 设置不可编辑的文本的字体颜色：更容易看清晰
+.el-input {
+    &.is-disabled {
+        .el-input__inner {
+            color: $fontCS;
+        }
+    }
+}
+
+.el-form-item__label {
+    color: $fontC !important;
+}
+.el-form-item__content {
+    input:not([disabled="disabled"]) {
+        color: $fontCT !important;
+    }
+    textarea:not([disabled="disabled"]) {
+        color: $fontCT !important;
+    }
+}
+input::-webkit-input-placeholder {
+    /* WebKit browsers */
+    color: $placeholderC !important;
+}
+input:-moz-placeholder {
+    /* Mozilla Firefox 4 to 18 */
+    color: $placeholderC !important;
+}
+input::-moz-placeholder {
+    /* Mozilla Firefox 19+ */
+    color: $placeholderC !important;
+}
+input:-ms-input-placeholder {
+    /* Internet Explorer 10+ */
+    color: $placeholderC !important;
+}
+
+textarea::-webkit-input-placeholder {
+    /* WebKit browsers */
+    color: $placeholderC !important;
+}
+textarea:-moz-placeholder {
+    /* Mozilla Firefox 4 to 18 */
+    color: $placeholderC !important;
+}
+textarea::-moz-placeholder {
+    /* Mozilla Firefox 19+ */
+    color: $placeholderC !important;
+}
+textarea::-ms-input-placeholder {
+    /* Internet Explorer 10+ */
+    color: $placeholderC !important;
+}
+
+// *********************************************菜单 el-menu
+.el-menu {
+    background-color: $secMenuBg;
+}
+// 左侧菜单树高度设置
+.el-menu-item, .el-submenu__title {
+    height: $appHeaderFirstMenuHeight;
+    line-height: $appHeaderFirstMenuHeight;
+}
+.el-menu--vertical {
+    .el-menu-item {
+        background: unset;
+        color: $menuText;
+        &:hover {
+            color: $menuActiveText;
+        }
+    }
+    .el-submenu__title {
+        color: $menuText;
+        background: unset !important;
+        i {
+            color: $menuText;
+        }
+        &:hover {
+            color: $menuActiveText;
+            i {
+                color: $menuActiveText;
+            }
+        }
+    }
+}

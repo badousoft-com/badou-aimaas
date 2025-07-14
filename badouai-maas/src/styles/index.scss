@@ -1,0 +1,29 @@
+// 初始化不同的浏览器在渲染网页元素的统一（消除不同浏览器的显示差异）
+@import './normalize.css';
+// 定义主题化下的所有变量（切换主题 = 更换此处的变量）
+@import './theme.scss';
+// UI框架修改类（专注所选的UI框架的统一变更，例如elementUI，样式不参杂自定义类）
+//     涉及UI框架类与自定义类结合的情况则去frame.scss中编写
+@import './uiFrame.scss';
+// 通用属性类：以单一样式属性做类
+@import './commonAttr.scss';  
+// 基于主题变量theme.scss中计算得出的通用属性类
+@import './themeAttr.scss';
+// 框架实现类
+@import './frame.scss';
+// 动画
+@import './animation.scss';
+// 过渡动效
+@import './transition.scss';
+// 工具类
+@import './tools.scss';
+// scss mixin类
+@import './mixin.scss';
+
+// @import './variables.scss'; TODO:变量与主题
+// ************************************************
+// 【具体项目一般只改这份文件，上面的全部不动 --start】
+// 具体项目业务类
+@import './business.scss';
+// 【项目生成时一般只改这份文件，上面的全部不动 --end】
+// ************************************************

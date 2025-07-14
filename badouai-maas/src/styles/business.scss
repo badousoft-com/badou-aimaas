@@ -1,0 +1,42 @@
+@import url(./list/middleware_list.scss);
+
+.application-manager-address {
+    .bd-dialog__body {
+        .bd-module-list-code {
+            .el-table__body-wrapper {
+                .el-table__row {
+                    td {
+                        &:last-of-type {
+                            .cell {
+                                width: 100px;
+                                .el-button {
+                                    display: none;
+                                    &:first-child {
+                                        display: inline-block;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+.dialog-stander-list-code {
+    height: calc(86vh - 6em) !important;
+}
+.color-blue {
+    color: $primaryBule;
+}
+// 两行省略
+.ellipsis-2 {
+    text-overflow: -o-ellipsis-lastline;
+    overflow: hidden; //溢出内容隐藏 
+    text-overflow: ellipsis; //文本溢出部分用省略号表示 
+    display: -webkit-box; //特别显示模式 
+    -webkit-line-clamp: 2; //行数 
+    line-clamp: 2; 
+    -webkit-box-orient: vertical; //盒子中内容竖直排列 
+}

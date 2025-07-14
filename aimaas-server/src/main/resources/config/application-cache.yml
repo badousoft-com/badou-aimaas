@@ -1,0 +1,7 @@
+spring:
+  cache:
+    type: simple
+    #缓存名称，需要使用缓存的名称必须得先在此处定义。否则会报错
+    cache-names: getReportData,loadPanelAndBlock
+    #默认有效时长
+    default-timeout: @maven.spring.cache.default.timeout@

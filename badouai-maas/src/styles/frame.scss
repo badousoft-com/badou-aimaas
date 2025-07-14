@@ -1,0 +1,1124 @@
+// 正文字体
+@font-face {
+    font-family: SourceHanSansCN-Regular;
+    // src: url('../assets/font/SourceHanSansCN-Regular.otf');
+    src: url('../assets/font/SourceHanSansCN-Regular.woff2');
+    font-display: swap;
+}
+
+// 加粗数字
+@font-face {
+    font-family: HONORSansCN-Bold;
+    src: url('../assets/font/HONORSansCN-Bold.ttf');
+    font-display: swap;
+}
+// 常规数字
+@font-face {
+    font-family: HONORSansCN-DemiBold;
+    src: url('../assets/font/HONORSansCN-DemiBold.ttf');
+    font-display: swap;
+}
+
+body {
+    height: 100%;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-family: PingFang SC, PingFangSC-Regular, SourceHanSansCN-Regular;
+    font-size: $font;
+    color: $fontCL;
+    word-break: break-all;
+    // 使用模型设计器-页面配置-搜索配置-选择模糊搜索-选中文本拖至最后，会出现样式bug一大块滚动条
+    // 添加这个overflow优化，有一天因为这个导致其他bug时，可以注释掉这里，模型设计器再想办法
+    overflow: hidden;
+}
+
+:root {
+    font-size: $font;
+}
+
+@media (min-width: 2000px) {
+    :root {
+        font-size: calc(#{$font} * 2); // 页面宽度大于1100px时，字体变为16像素的2倍
+    }
+}
+
+
+html {
+    height: 100%;
+    box-sizing: border-box;
+}
+
+#app {
+    height: 100%;
+    min-width: 1024px;
+    @media screen and (max-width: 800px) {
+        min-width: 0;
+    }
+
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+a:focus,
+a:active {
+    outline: none;
+}
+
+a,
+a:focus,
+a:hover {
+    cursor: pointer;
+    color: inherit;
+    text-decoration: none;
+}
+
+div:focus {
+    outline: none;
+}
+
+.clearfix {
+    &:after {
+        visibility: hidden;
+        display: block;
+        font-size: 0;
+        content: " ";
+        clear: both;
+        height: 0;
+    }
+}
+
+// main-container global css
+.app-container {
+    padding: 20px;
+}
+
+
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+
+
+
+// 存放框架级别样式
+.font { font-size: $font; }
+.fontL { font-size: $fontL; }
+.fontS { font-size: $fontS; }
+.fontC { color: $fontC; }
+.fontCL { color: $fontCL; }
+.fontCS { color: $fontCS; }
+.fontCM { color: #ccc; }
+
+.whiteC { color: #fff; }
+.bg-grey { background: $grey; }
+.noBorder { border: none !important; }
+.border { border: 1px solid $lineColor; }
+.box-shadow { box-shadow: 0px 0px 6px 0px rgba(16, 16, 16, 0.1); }
+
+// 常规数字
+.regular-number { font-family: $numFamily; }
+// 加粗数字
+.bold-number { font-family: $numBoldFamily; }
+
+// 使用场景：顶部固定，内容滚动时，为顶部添加该阴影类
+.scroll-shadow {
+    border-bottom: none !important;
+    position: relative;
+    z-index: 1;
+    @extend .box-shadow
+}
+.padVer {
+    padding-top: $padding;
+    padding-bottom: $padding;
+}
+.padHor {
+    padding-left: $padding;
+    padding-right: $padding;
+}
+.marVer {
+    margin-top: $space;
+    margin-bottom: $space;
+}
+.hoverC {
+    &:hover {
+        color: $primary;
+    }
+}
+.clearConBtn {
+    cursor: pointer;
+    color: $primary;
+    font-size: $font;
+    &:hover {
+        text-decoration: underline;
+    }
+}
+// 设置鼠标手势
+.pointer { cursor: pointer !important; }
+// 设置禁用手势
+.is-disabled { cursor: not-allowed !important; }
+// 设置去除手势
+.noCursor { cursor: default !important; }
+// 设置元素不被任何鼠标事件响应
+.noEvents { pointer-events: none !important; }
+// 保持原有尺寸比例。内容被缩放
+.imgContain { object-fit: contain; }
+.lh-n { line-height: normal; }
+// 优化不可编辑按钮透明度实现弱化效果；
+.el-button.is-disabled {
+    opacity: 0.6;
+}
+// 临时滚动条样式，只处理wekit  --start
+    // 滚动条的宽度
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+    //滚动条的滑块
+::-webkit-scrollbar-thumb {
+    background-color: rgba(144, 147, 153, 0.2);
+    border-radius: 4px;
+    &:hover {
+        background-color: rgba(144, 147, 153, 0.4);
+    }
+}
+// 临时滚动条样式，只处理wekit  --end
+
+// 系统颜色方案 --start
+// 提供主题方案类 .primaryC, .primaryBg
+//               .warningC, .warningBg
+//               .dangerC, .dangerBg
+//               .successC, .successBg
+@mixin defaultColor ($color: $primary) {
+    color: $color;
+}
+@mixin defaultBg ($bg: $primary) {
+    background: $bg;
+    border-color: $bg;
+    color: #fff;
+}
+@each $className, $theme in (primary, $primary), 
+                            (success, $success),
+                            (warning, $warning), 
+                            (danger, $danger),
+                            (operate, $operate),
+                            (grey, $grey){
+    // 主题文字
+    .#{$className}C {
+        @include defaultColor(#{$theme});
+    }
+    // 主题背景展示
+    .#{$className}Bg {
+        @include defaultBg(#{$theme});
+    }
+    // 主题标签展示
+    .#{$className}Tag {
+        display: inline-block;
+        background: rgba($theme, 0.1);
+        color: $theme;
+        padding: 2px 8px;
+        border-radius: $borderRadius;
+        .bd-icon {
+            fill: $theme;
+        }
+    }
+    // 主题标签展示
+    .#{$className}Sign {
+        $size: 20px; // 定义变量
+
+        @include defaultBg(#{$theme});
+        display: inline-block;
+        border-radius: 50%;
+        margin: 0 2px;
+        width: $size;
+        height: $size;
+        line-height: $size;
+        text-align: center;
+        font-size: $fontS;
+    }
+    .s-label-#{$className} {
+        color: #{$theme};
+        display: inline-block;
+        padding: 0px $padding;
+        height: $buttonHeight;
+        line-height: $buttonHeight;
+        background: rgba($theme, 0.1);
+        border-radius: $borderRadius;
+    }
+}
+// 系统颜色方案 --end
+
+// 盒子模型 --start
+@each $direction in (Top, Right, Bottom, Left){
+    .pad#{$direction} {
+        padding-#{$direction}: $padding;
+    }
+    .mar#{$direction} {
+        margin-#{$direction}: $space;
+    }
+}
+// 盒子模型 --end
+// popover 弹窗样式 -start
+.m-popover-checkbox {
+    .el-checkbox {
+        display: block;
+        .el-checkbox__label {
+            max-width: 200px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            vertical-align: top;
+            margin-bottom: $space/2;
+        }
+    }
+}
+// popover 弹窗样式 -end
+// 文本输入域 textarea  --start
+.noResize {
+    textarea{
+        resize: none; // 不显示可自由拖动尺寸按钮
+    }
+} 
+// 文本输入域 el-textarea  --end
+
+// 文字跳跃动画
+.a-jump {
+    animation: bounce 0.4s ease 2 alternate;
+    display: inline-block;
+    transform: translate3d(0, 0, 0);
+    text-shadow: rgba(255, 255, 255, 0.4) 0 0 0.05em;
+    @for $i from 1 through 30 {
+        &:nth-child(#{$i}) {
+            animation-delay: $i  * 0.04s;
+        }
+    }
+}
+@keyframes bounce {
+    0% {
+        transform: translate3d(0, 0, 0);
+        text-shadow: rgba(0, 0, 0, 0.4) 0 0 0.05em;
+    }
+    100% {
+        transform: translate3d(0, -0.6em, 0);
+        text-shadow: rgba(0, 0, 0, 0.4) 0 0.6em 0.35em;
+    }
+}
+
+
+
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+
+
+
+
+// 存放项目业务相关css
+// padding默认
+.padding { padding: $space; }
+.margin { margin: $space; }
+.noPadding { padding: 0; }
+.noMargin { margin: 0; }
+// 默认底部margin
+.marginB { margin-bottom: $space; }
+
+.defaultBg { background: $contentInBg; }
+// 限制页面模块最大化,内部滚动,外部不参与滚动
+.limited {
+    height: calc(100vh - #{$appHeaderHeight} - #{$locationHeight} - #{$space}) !important;
+}
+// 表单模块样式---start
+$signWidth: 4px;
+$signHeight: 16px;
+// 作用于标题icon
+.bd-icon {
+    &.pillar {
+        width: 1.2em !important;
+        margin: 0 -5px;
+    }
+    &.point {
+        width: 0.5em !important;
+        margin: 0 2px 0 0;
+    }
+}
+.formPage {
+    border-radius: $borderRadius;
+    .form-title {
+        height: $formTitleHeight;
+        line-height: $formTitleHeight;
+        font-size: $font;
+        font-weight: 600;
+        padding: 0px $space;
+        color: $fontCL;
+        border-bottom: 1px solid $lineColor;
+        display: flex;
+        align-items: center;
+    }
+}
+.m-tab {
+    .form-title {
+        // tab标签下不使用表单自带标题
+        display: none;
+    }
+}
+$formItemHorDic: 24px;
+.form-main {
+    padding: $space;
+    overflow-x: hidden;
+    .m-form {
+        .m-form-item {
+            position: relative;
+            padding-right: $formItemHorDic;
+            font-size: 0;
+            // 考虑验证失败的错误提醒在文本域底部,需要足够空间展示
+            margin-bottom: $formItemDis + 10px;
+            display: flex;
+            .m-form-item-label {
+                font-size: $font;
+                color: $fontC;
+                display: inline-block;
+                line-height: $inputHeight;
+                vertical-align: top;
+                text-align: right;
+                padding-right: $padding;
+                flex: 0 1 auto;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                .require-sign {
+                    display: inline-block;
+                    line-height: $inputHeight;
+                    vertical-align: middle;
+                    color: $danger;
+                }
+            }
+            .m-form-item-content {
+                font-size: $font;
+                color: $fontCT;
+                display: inline-block;
+                flex: 1;
+                .has-error {
+                    .invalid-feedback {
+                        font-size: $fontS !important;
+                        width: 100%;
+                        position: absolute;
+                        bottom: -$font;
+                        right: 0;
+                        display: block;
+                        top: $inputHeight;
+                        padding-right: $formItemHorDic;
+                        text-align: right;
+                        z-index: 1;
+                    }
+                }
+            }
+            
+        }
+    }
+}
+.m-module-view {
+    .m-form {
+        padding: $padding;
+        background: $formViewBg;
+        border-radius: $borderRadius;
+        .m-form-item {
+            .m-form-item-label {
+                text-align: left;
+                line-height: unset;
+                padding-right: $padding + 5px;
+                &:after {
+                    content: ':';
+                    position: absolute;
+                }
+            }
+        }
+    }
+}
+// 重写表单样式准备 --start
+.bdFormItem {
+    width: 200px;
+    margin-right: $space;
+    display: inline-block;
+    margin-bottom: $space;
+    vertical-align: top;
+    & > div {
+        // 部分表单组件有自己的样式宽度,需要处理,根据父亲定制宽度,其作为儿子自动铺满
+        width: 100% !important;
+    }
+}
+// 重写表单样式准备 --end
+// 表单模块样式---end
+// 设置系统辅助色：红色
+.danger-color { color: $danger; }
+.text-danger { color: $danger !important; }
+// 导航条动效 --start
+.bd-nav {
+    border-bottom: 1px solid $firMenuBg;
+    
+    // .bd-nav-item {
+    //     position: relative;
+    //     &.is-active {
+    //         &:after {
+    //             content: '';
+    //             height: 4px;
+    //             width: 100%;
+    //             background-color: #fff;
+    //             position: absolute;
+    //             left: 0;
+    //             bottom: 0;
+    //         }
+    //     }
+    // }
+    .bd-nav-bar-wrap {
+        height: 100%;
+        pointer-events: none;
+        position: absolute;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        transition: left .3s;
+        will-change: contents;
+        // 从小 位移到大
+        &.small-to-big {
+            .bd-nav-bar {
+                transition: width .5s ease .2s;
+            }   
+        }
+        // 从大 位移到小
+        &.big-to-small {
+            transition: left .2s, width .6s;
+            justify-content: flex-start;
+        }
+        .bd-nav-bar {
+           display: inline-block;
+           background: #fff;
+           pointer-events: none;
+           height: 4px;
+           transition: width .7s ease;
+           will-change: contents;
+       }
+   }
+    
+}
+// 导航条动效 --end
+// =====================================================
+// 树型列表模块 --start
+.m-tree-list {
+    display: flex;
+    height: 100%;
+    max-width: 100%;
+    background: $contentOutBg;
+    .m-tree-main {
+        position: relative;
+        width: 250px;
+        transition-timing-function: cubic-bezier(0.98, 0, 0.22, 0.98);
+        transition-duration: 0.4s;
+        transition-property: width;
+        border-radius: $borderRadius;
+        background: $contentInBg;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        // border: 1px solid #fff; // 不需要加白边，树样式会多一条
+        border-top: none;
+        flex: 0 0 auto;
+        .tree-title {
+            justify-content: space-between;
+            display: flex;
+            padding: $space;
+            background: $primary;
+            color: $contentInBg;
+            flex-shrink: 0;
+            .name {
+                position: relative;
+                display: inline-block;
+                left: 0;
+                flex-basis: 200px;
+                transition-timing-function: cubic-bezier(0.98, 0, 0.22, 0.98);
+                transition-duration: 0.5s;
+                transition-property: all;
+            }
+        }
+        .el-scrollbar {
+            height: 100%;
+            left: 0;
+            transition-timing-function: cubic-bezier(0.98, 0, 0.22, 0.98);
+            transition-duration: 0.6s;
+            transition-property: left;
+            .el-scrollbar__wrap {
+                // 控制横向滚动条随着数据扩展自动宽度铺满去展示横向滚动条
+                .el-tree > .el-tree-node{
+                    min-width: 100%;
+                    display: inline-block;
+                }
+                .m-tree {
+                    padding-right: 10px;
+                    padding-bottom: 10px;
+                    .bd-icon {
+                        color: $primary !important;
+                    }
+                }
+            }
+        }
+        &.is-hide {
+            width: 40px;
+            .tree-title {
+                .name {
+                    left: -250px;
+                    flex-basis: 0;
+                }
+            }
+            .el-scrollbar {
+                left: -250px;
+            }
+            & + .m-treeList {
+                flex: 1 1 0;
+            }
+        } 
+    }
+    .m-treeList {
+        overflow-x: hidden;
+        flex: 1 1 0;
+        margin-left: $space;
+        border-radius: $borderRadius;
+        padding: $space;
+        background: $contentInBg;
+    }
+}
+// 树型列表模块 --end
+// 编辑页底部固定  --start
+.fixBottomBtn {
+    height: $footerHeight;
+    line-height: $footerHeight;
+    width: 100%;
+    bottom: 0;
+    left: 0;
+    background: #fff;
+    text-align: center;
+    position: absolute;
+    z-index: 600;
+    box-shadow: 0px 9px 15px 3px rgba(102,102,102,0.5)
+}
+// 编辑页底部固定  --end
+// tab --start
+.m-tab {
+    border: 1px solid $lineColor;
+    border-radius: $borderRadius;
+    .el-tabs__header {
+        padding: 0px $padding;
+        margin: 0;
+        .el-tabs__active-bar {
+            height: 3px;
+        }
+        .el-tabs__item {
+            &.is-active {
+                font-weight: 600;
+            }
+        }
+        .el-tabs__nav-wrap {
+            &::after {
+                height: 0;
+            }
+        }
+    }
+    .el-tabs__content {
+        margin: 0 $padding $padding;
+        padding: $padding;
+        border: 1px solid $lineColor;
+        border-radius: $borderRadius;
+    }
+    .border {
+        .el-tabs__header {
+            border-bottom: 1px solid $lineColor;
+        }
+        .el-tabs__content {
+            margin: 0;
+            border: none;
+        }
+        
+    }
+    &.noBorder {
+        border: none;
+        .el-tabs__content {
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+        }
+    }
+}
+// tab --end
+// 滚动条处理, 在滚动组件el-scrollbar上面添加类名:hideX
+.el-scrollbar.hideX {
+    .el-scrollbar__wrap {
+        // 隐藏原有的横向滚动条(丑),展示el-scrollbar的横向滚动条
+        overflow-x: hidden !important;
+    }
+}
+// 滚动条处理
+$viewLineHeight: $font + 4px;
+// 表单查看以表格形式展示：暂不处理所有的特殊类型：图片、地址本
+$viewTableLine: 1px solid #eee;
+$label-lineHeight: $font + 2px;
+.bd-form-part {
+    border-radius: $borderRadius;
+    &.has-title {
+        .bd-form {
+            // 若存在标题区域，则组件页面需要减去标题高度，剩下的铺满，溢出则滚动
+            height: calc(100% - #{$formTitleHeight});
+        }
+    }
+    .bd-form {
+        padding: $padding $padding;
+        // form区域设置高度100%铺满，内容溢出则可以滚动
+        height: 100%;
+        overflow: auto;
+        width: 100%;
+        transition: opacity 0.06s;
+        .bd-form__group {
+            background: #fff;
+            border-bottom: 1px solid $lineColor;
+            // border-radius: $borderRadius;
+            border-radius: 0px;  // 避免查看时：底部只有一条线，此时会有角翘起
+            overflow-x: hidden;
+            &:last-of-type {
+                border-bottom: none;
+            }
+            .title {
+                padding-bottom: 2 * $padding;
+                font-weight: bold;
+                color: $primary;
+                .group-icon {
+                    width: 1.2em;
+                    &.is-small {
+                        width: .6em;
+                    }
+                }
+            }
+            $field-padding-right: 24px;
+            .el-row {
+                width: calc(100% + #{$field-padding-right});
+                .el-col {
+                    padding-right: $field-padding-right;
+                    .el-form-item {
+                        display: flex;
+                        // 这里不设置align-items的话，默认会拉伸铺满，导致错误提示出现在异常的地方，配置为顶部对齐不拉伸
+                        align-items: flex-start;
+                        margin-right: 0px;
+                        width: 100%;
+                        .el-form-item__label {
+                            min-height: $inputHeight;
+                            line-height: $label-lineHeight;
+                            display: flex;
+                            align-items: center;
+                            flex-direction: row-reverse;
+                            position: relative;
+                            .el-form-item__label-wrap {
+                                margin-left: 0!important;
+                            }
+                            .s-label {
+                                position: relative;
+                                .s-label-area {
+                                    max-width: unset !important;
+                                    // 表单编辑模块添加 提示图标样式
+                                    &.has-use-tip {
+                                        display: inline-block;
+                                        //  当出现图标时 为其腾出位置
+                                        // margin-right: 1.3em;
+                                        .tip-icon {
+                                            width: $font;
+                                            height: $font;
+                                            padding: 0;
+                                            float: left;
+                                            color: $fontCS;
+                                            padding-right: 1px;
+                                            margin-top: 1px;
+                                        }
+                                    }
+                                    .s-label-word {
+                                        word-break: break-word;
+                                    }
+                                }
+                            }
+                        }
+                        .el-form-item__content {
+                            flex: 1;
+                            // 不能使用normal，在普通text与select中显示会不同
+                            line-height: 1;
+                            // 不能使用height,对于高度大于height的文本域使用时，会出现滚动条
+                            min-height: $inputHeight;
+                            // 表单类型-富文本
+                            .richText {
+                                // 只对编辑状态的行高设置，富文本工具栏才不会受到行高影响
+                                .editStatus {
+                                    line-height: normal;
+                                }
+                            }
+                            // 定义radio与checkbox通用变量
+                            $paddingLeft: 4px;
+                            .el-radio-group {
+                                .el-radio {
+                                    margin-top: $space - 2px;
+                                    .el-radio__label {
+                                        padding-left: $paddingLeft;
+                                    }
+                                }
+                            }
+                            // 表单类型-复选框
+                            .el-checkbox-group {
+                                line-height: 1;
+                                margin-top: -3px;
+                                .el-checkbox {
+                                    padding-left: 0;
+                                    margin-top: $space - 1px;
+                                }
+                            }
+                            // 表单类型-开关
+                            .form-switch {
+                                line-height: $inputHeight - 4px;
+                            }
+                        }
+                        &.wrongTipLeft {
+                            // 默认设置右对齐错误提示，存在场景左侧有内容，提示在右侧，展示不好看此时可以设置左对齐
+                            .el-form-item__error {
+                                left: 0;
+                            }
+                        }
+                        &.isBlock {
+                            flex-direction: column;
+                            .el-form-item__label {
+                                line-height: $label-lineHeight;
+                                flex-direction: row;
+                                text-align: left;
+                                width: 100% !important;
+                                .s-label {
+                                    .s-label-area {
+                                        max-width: unset !important;
+                                    }
+                                }
+                            }
+                            .el-form-item__content {
+                                width: 100% !important;
+                            }
+                        }
+                        &.isShowAllLabel {
+                            .el-form-item__label {
+                                width: unset !important;
+                                .s-label {
+                                    .s-label-area {
+                                        max-width: unset !important;
+                                    }
+                                }
+                            }
+                            .el-form-item__content {
+                                width: unset;
+                            }
+                        }
+                        &.hidenItemContent {
+
+                        }
+                        &.is-required {
+                            .el-form-item__label {
+                                &:before {
+                                    position: absolute;
+                                    top: 4px;
+                                    right: 0;
+                                    color: $danger;
+                                    font-weight: bold;
+                                }
+                            }
+                        }
+                    }
+                    .form-item-append {
+                        position: absolute;
+                        width: 100%;
+                        line-height: $inputHeight;
+                        top: 0;
+                        left: 98%;
+                    }
+                }
+                &.onlyOneColumn {
+                    width: 50%;
+                    margin: auto;
+                }
+            }
+            & + .bd-form__group {
+                margin-top: 10px;
+            }
+        }
+        &.is-view {
+            .bd-form__group {
+                padding: $padding;
+                border-bottom: none;
+                background: $formViewBg;
+                .el-row {
+                    .el-col {
+                        .el-form-item {
+                            // 去除查看模式下表单校验的*号 --end
+                            margin-bottom: 10px;
+                            .el-form-item__label {
+                                line-height: $viewLineHeight;
+                                // 加这个，是为了让label完全显示，不会因为内容区过多而压缩到label
+                                flex-shrink: 0;
+                                align-items: baseline;
+                                & > span {
+                                    &:after {
+                                        content: ':'
+                                    }
+                                }
+                            }
+                            .el-form-item__content {
+                                line-height: $viewLineHeight;
+                                // 表单类型-开关
+                                .form-switch {
+                                    line-height: $viewLineHeight;
+                                }
+                            }
+                            // 去除查看模式下表单校验的*号 --start
+                            &.is-required {
+                                .el-form-item__label {
+                                    &:before {
+                                        content: none;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                &:last-of-type {
+                    .el-row {
+                        &:last-of-type {
+                            .el-col {
+                                .el-form-item {
+                                    margin-bottom: 0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        &.is-table {
+            padding: 0;
+            .bd-form__group {
+                background: rgba(0, 0, 0, 0);
+                .el-row {
+                    border: $viewTableLine;
+                    border-bottom: 0;
+                    width: calc(100% + 6px);
+                    display: flex;
+                    &:last-child {
+                        border-bottom: $viewTableLine;
+                    }
+                    .el-col {
+                        display: inline-block;
+                        border-right: $viewTableLine;
+                        float: none;
+                        &:last-child {
+                            border-right: none;
+                        }
+                        .el-form-item {
+                            margin-bottom: 0px;
+                            height: 100%;
+                            .el-form-item__label {
+                                height: 100%;
+                                text-align: left;
+                                border-right: $viewTableLine;
+                                background: #f9f9f9;
+                                color: $fontCT !important;
+                                line-height: $inputHeight;
+                                padding: 0 $padding;
+                                display: flex;
+                                &:last-child {
+                                    border-right: none;
+                                }
+                                & > span {
+                                    text-align: center;
+                                    margin: auto;
+                                    white-space: normal;  // 文本溢出换行
+                                    display: flex;
+                                    align-items: center;
+                                    &:after {
+                                        content: none;
+                                    }
+                                }
+                            }
+                            .el-form-item__content {
+                                line-height: $inputHeight;
+                                padding: 0 $padding;
+                                align-self: center;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        &.is-no-height {
+            height: 0;
+        }
+    }
+    .form-title {
+        height: $formTitleHeight;
+        line-height: $formTitleHeight;
+        font-size: $fontL;
+        font-weight: 600;
+        padding: 0px $padding;
+        color: $fontCL;
+        border-bottom: 1px solid $lineColor;
+    }
+}
+// 设置表单下组件元素宽度铺满
+@mixin setCover {
+    .el-select,
+    .el-date-editor,
+    .el-autocomplete,
+    .el-cascader,
+    .el-input-number {
+        width: 100%;
+    }
+}
+// 设置模型表单-内容区域使用该铺满样式
+.m-form {
+    .m-form-item {
+        .m-form-item-content {
+            @include setCover
+        }
+    }
+}
+// 设置自定义表单-内容区域使用该铺满样式
+.bd-form {
+    .el-form-item {
+        .el-form-item__content {
+            @include setCover
+        }
+    }
+}
+// dialog--start
+$vPadding: 20px;
+$hPadding: 10px;
+.bd-dialog {
+    border-radius: $borderRadius;
+    // 弹窗宽度在变化时设置过渡，若以后视图出现异常再对应处理
+    transition: all 0.06s ease;
+    .el-dialog__header {
+        border-bottom: 1px solid $lineColor;
+        background: hsla($primaryHue, $saturation, $lightness + 4%, $alpha);;
+        color: #fff;
+        .bd-dialog-title {
+            .bd-icon {
+                fill: #fff !important;
+            }
+        }
+        .el-dialog__headerbtn {
+            .el-icon-close {
+                color: #fff;
+                font-weight: bold;
+                transition: all 0.6s;
+                &:hover {
+                    transform: rotate(180deg);
+                }
+            }
+        }
+    }
+    &.has-title-shadow {
+        .el-dialog__header {
+            box-shadow: 0px 0px 6px 0px rgba(16, 16, 16, 0.1) inset;
+            // 出现阴影时隐藏边框线
+            border-bottom: 0;
+        }
+    }
+    .el-dialog__body {
+        // 这里不干涉内容区padding，在存在内容滚动的情况下有初始padding反而会干扰
+        // 所以去除padding值，将整个弹窗正文模块完整支持自定义编辑
+        // padding: $hPadding $hPadding; 
+        padding: 0;
+        .bd-dialog__body {
+            height: 100%;
+            overflow: auto;
+            .m-module-list {
+                padding-right: 20px;
+            }
+            .self-module-list {
+                margin-right: $space;
+                margin-bottom: $space;
+            }
+            .dialog-list {
+                .el-table {
+                    border: 1px solid $lineColor;
+                    border-radius: $borderRadius;
+                }
+            }
+        }   
+    }
+    .el-dialog__footer {
+        border-top: 1px solid $lineColor;
+        text-align: center;
+        padding: $padding;
+    }
+    &.is-fullscreen {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        & > .el-dialog__body {
+            flex: 1;
+            height: 100%;
+            overflow: auto;
+        }
+    }
+}
+// dialog--end
+// 富文本编辑器 --start
+// 富文本编辑框的等级太高,默认999，容易盖住其他元素
+.richText {
+    .edui-editor.edui-default {
+        z-index: 1 !important;
+    }
+}
+// 富文本编辑器 --end
+
+// 面板暂无数据 ---- start
+.echartjs-no-data-box {
+    padding-top: 20px;
+    text-align: center;
+    color: #999;
+    &::after {
+        content: '暂无数据';
+        display: block;
+        margin-top: 10px;
+    }
+}
+// 面板暂无数据 ---- end
+
+// 文本悬浮出现下划线动画 --start
+.hover-underline {
+    cursor: pointer;
+    position: relative;
+    text-decoration: none;
+    &:before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -2px;
+        width: 0;
+        height: 1px;
+        background: $primary;
+        transition: all .3s;
+    }
+    &:hover:before {
+        width: 100%;
+        left: 0;
+        right: 0;
+    }
+}
+// 文本悬浮出现下划线动画 --end

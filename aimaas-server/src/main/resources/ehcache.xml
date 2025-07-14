@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ehcache name="HIBERNATE_CACHE" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="http://www.ehcache.org/ehcache.xsd"
+         updateCheck="true" monitoring="autodetect"
+         dynamicConfig="true">
+    <diskStore path="../cache/hibernate"/>
+    <transactionManagerLookup class="net.sf.ehcache.transaction.manager.DefaultTransactionManagerLookup"
+                              properties="jndiName=java:/TransactionManager" propertySeparator=";"/>
+    <defaultCache
+            maxEntriesLocalHeap="0"
+            eternal="false"
+            timeToIdleSeconds="1200"
+            timeToLiveSeconds="1200">
+    </defaultCache>
+    <cache name="entityCache"
+           maxEntriesLocalHeap="1000"
+           maxEntriesLocalDisk="10000"
+           eternal="false"
+           diskSpoolBufferSizeMB="20"
+           timeToIdleSeconds="10"
+           timeToLiveSeconds="20"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off">
+        <persistence strategy="localTempSwap"/>
+    </cache>
+    <cache name="org.hibernate.cache.internal.StandardQueryCache"
+           maxEntriesLocalHeap="5" eternal="false" timeToLiveSeconds="120">
+        <persistence strategy="localTempSwap"/>
+    </cache>
+    <cache name="org.hibernate.cache.spi.UpdateTimestampsCache"
+           maxEntriesLocalHeap="5000" eternal="true">
+        <persistence strategy="localTempSwap"/>
+    </cache>
+
+</ehcache>

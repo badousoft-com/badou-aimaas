@@ -1,0 +1,1 @@
+org.springframework.context.ApplicationListener=com.badou.project.common.listener.JwebapStartUpListener,com.badou.project.common.listener.QuartzStartupLoaderListener

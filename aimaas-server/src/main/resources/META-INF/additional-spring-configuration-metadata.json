@@ -1,0 +1,244 @@
+{
+  "properties": [
+    {
+      "name": "badou.request.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "是否开启API合法性校验，默认开启."
+    },
+    {
+      "name": "badou.request.legal-time",
+      "type": "java.lang.Integer",
+      "defaultValue": 60,
+      "description": "合法请求时间间隔，默认60S."
+    },
+    {
+      "name": "badou.useDebugger.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "是否开启调试模式，默认关闭."
+    },
+    {
+      "name": "badou.request.cross.allow",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "允许跨域域名配置,默认为空."
+    },
+    {
+      "name": "spring.cache.default-timeout",
+      "type": "java.lang.Integer",
+      "defaultValue": 60,
+      "description": "缓存默认有效时间，默认60分钟."
+    },
+    {
+      "name": "logging.contextName",
+      "type": "java.lang.String",
+      "description": "日志文件名."
+    },
+    {
+      "name": "jwt.tokenHeader",
+      "type": "java.lang.String",
+      "description": "JWT存储的请求头."
+    },
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "JWT加解密使用的密钥."
+    },
+    {
+      "name": "jwt.expiration",
+      "type": "java.lang.String",
+      "description": "JWT的超期限时间（单位：秒）."
+    },
+    {
+      "name": "jwt.tokenHead",
+      "type": "java.lang.String",
+      "description": "JWT负载中拿到开头."
+    },
+    {
+      "name": "jasypt.boot.admin.client.enabled",
+      "type": "java.lang.String",
+      "description": "是否启用Spring Boot Admin Client."
+    },
+    {
+      "name": "jasypt.boot.admin.client.instance.service-base-url",
+      "type": "java.lang.String",
+      "description": "本地的ip和项目端口."
+    },
+    {
+      "name": "jasypt.boot.admin.client.instance.name",
+      "type": "java.lang.String",
+      "description": "SpringBootAdmin 实例名."
+    },
+    {
+      "name": "jasypt.boot.admin.client.url",
+      "type": "java.lang.String",
+      "description": "Spring Boot Admin Server的URL."
+    },
+    {
+      "name": "spring.jpa.cache.ehcache.config",
+      "type": "java.lang.String",
+      "description": "ehcache配置文件."
+    },
+    {
+      "name": "spring.jpa.cache.type",
+      "type": "java.lang.String",
+      "description": "缓存类型."
+    },
+    {
+      "name": "spring.redis.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "是否开启Redis，默认开启."
+    },
+    {
+      "name": "spring.cache.badou-cache.loadPanelAndBlock",
+      "type": "java.lang.Integer",
+      "defaultValue": 60,
+      "description": "读取面板下块数据的缓存有效期，默认60分钟."
+    },
+    {
+      "name": "spring.cache.badou-cache.getReportData",
+      "type": "java.lang.Integer",
+      "defaultValue": 60,
+      "description": "块的报表数据缓存有效期，默认60分钟."
+    },
+    {
+      "name": "jasypt.boot.admin.client.instance.prefer-ip",
+      "type": "java.lang.String",
+      "description": "展示实际IP."
+    },
+    {
+      "name": "spring.jpa.hibernate.dialect",
+      "type": "java.lang.String",
+      "description": "Hibernate指定数据库方言类."
+    },
+    {
+      "name": "spring.jpa.hibernate.naming-strategy",
+      "type": "java.lang.String",
+      "description": "Hibernate命名策略."
+    },
+    {
+      "name": "message.email.switch",
+      "type": "java.lang.String",
+      "description": "邮件控制开关."
+    },
+    {
+      "name": "badou.attachconf.path.tesserDataPathcn",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "tesseract-ocr文件路径，默认为空."
+    },
+    {
+      "name": "badou.request.excludes.login",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "要在登录拦截器中排除验证是否登录的URI,多个用“;” 追加即可,默认为空."
+    },
+    {
+      "name": "badou.request.excludes.nonce",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "绕过API安全性校验中的nonce参数校验URI，多个用“;”追加即可,默认为空."
+    },
+    {
+      "name": "badou.request.excludes.sign",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "绕过API安全性校验中的sign参数校验URI，多个用“;”追加即可,默认为空."
+    },
+    {
+      "name": "badou.rsa.public-key-path",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "公钥存储路径."
+    },
+    {
+      "name": "badou.rsa.private-key-path",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "私钥存储路径."
+    },
+    {
+      "name": "badou.oauth2.client-id",
+      "type": "java.lang.String",
+      "description": "客户端标识，默认与当前应用名称一致."
+    },
+    {
+      "name": "badou.oauth2.client-secret",
+      "type": "java.lang.String",
+      "description": "客户端秘钥，默认与当前应用名称一致."
+    },
+    {
+      "name": "badou.oauth2.token.timeout",
+      "type": "java.lang.Integer",
+      "description": "Token过期时间，默认为1个小时（单位秒）."
+    },
+    {
+      "name": "badou.oauth2.token.refresh-timeout",
+      "type": "java.lang.Integer",
+      "description": "Token刷新过期时间，默认为1个小时（单位秒）."
+    },
+    {
+      "name": "badou.oauth2.mobile.client-id",
+      "type": "java.lang.String",
+      "description": "移动客户端标识，默认为当前应用名称-mobile."
+    },
+    {
+      "name": "badou.oauth2.token.mobile.timeout",
+      "type": "java.lang.Integer",
+      "description": "Token过期时间，默认为30天（单位秒）."
+    },
+    {
+      "name": "badou.oauth2.token.mobile.refresh-timeout",
+      "type": "java.lang.Integer",
+      "description": "Token刷新过期时间，默认为30天（单位秒）."
+    },
+    {
+      "name": "badou.oauth2.token.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用Token登录校验，默认为启用."
+    },
+    {
+      "name": "badou.oauth2.auth-center-url",
+      "type": "java.lang.String",
+      "defaultValue": "http://localhost:8080",
+      "description": "认证服务访问地址."
+    },
+    {
+      "name": "badou.cache.panel-enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "是否开启面板缓存,默认为false."
+    },
+    {
+      "name": "badou.cas.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "是否开启CAS,默认为false."
+    },
+    {
+      "name": "badou.cas.front-url",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "前端访问地址，用于通过CAS验证后进行页面回调."
+    },
+    {
+      "name": "badou.security.xss.regular",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "XSS和SQL过滤条件正则，以;号区分."
+    },
+    {
+      "name": "badou.security.xss.exclude-field-name",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "XSS和SQL不过滤字段名，以;号区分."
+    },
+    {
+      "name": "badou.security.host",
+      "type": "java.lang.String",
+      "defaultValue": "",
+      "description": "允许的合法请求头HOST，以;号区分."
+    }
+  ] }

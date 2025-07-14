@@ -1,0 +1,16 @@
+.b-b { border-bottom: 1px solid $lineColor; }
+.border-radius, .b-r { border-radius: $borderRadius; overflow: hidden; }
+.mar-t { margin-top: $padding; }
+.mar-r { margin-right: $padding; }
+.mar-b { margin-bottom: $padding; }
+.mar-l { margin-left: $padding; }
+.pad-hor { padding: 0 $padding; }
+.hidden { opacity: 0; }
+.form-item-lineHeight { line-height: $inputHeight; }
+// 元素可点击
+.h-c-primary {
+    cursor: pointer !important;
+    &:hover {
+        color: $primary;
+    }
+}

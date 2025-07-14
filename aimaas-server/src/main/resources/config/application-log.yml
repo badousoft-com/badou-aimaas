@@ -1,0 +1,18 @@
+#日志相关配置
+logging:
+  #日志文件保存路径
+  path: @maven.logging.path@
+  #日志文件名，与当前应用名保持一致
+  contextName: @artifactId@
+  #日志级别
+  level:
+    #默认
+    root: error
+    #指定包路径的日志错误级别
+    com:
+      badou: @maven.logging.level.badou@
+  file:
+    #最多保留多少天的日志文件
+    max-history: @maven.logging.file.maxHistory@
+    #单个日志文件的大小限制
+    max-size: @maven.logging.file.maxSize@

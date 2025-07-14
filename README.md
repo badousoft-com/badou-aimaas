@@ -1,268 +1,196 @@
-![](assets/AIMAAS-HEAD.png)
-
 # 										   				  **赋能应用，开启智能新时代 🤖**
 
-🌐 **AIMaaS** 是部署、管理和调用 AI 模型作为云服务的最简途径。基于 **Model-as-a-Service（MaaS）** 范式，它抽象了 AI 基础设施的复杂性，同时提供企业级能力。
+aimaas 平台，是八斗开发的模型一站式服务管理平台，集模型部署、管理、微调、监控及算力资源调度等功能于一体，目标是降低企业私有化部署模型、搭建微调训练平台的复杂度，特点包含：一键部署模型、一键启停模型、在线监控模型运行状态、一键式模型微调、多算力设备统一管理等。
 
-💡 加入我们的 AI 实践者社区，在 Discord 分享你的项目！企业支持请联系 销售团队。
- ☁️ 跳过基础设施搭建——立即使用我们的 ​**托管平台** 实现 AI 部署！**试用 AIMaaS 云平台**。
 
-------
 
-## ✨ 核心功能
+# 前置环境配置
 
-- 🚀 **一键部署**：将 AI 模型转化为可扩展 API 端点
-- 🔄 **自动版本管理**：支持模型全生命周期控制
-- 📊 **性能监控**：实时分析模型调用与资源使用
-- 🔧 **智能微调**：支持模型参数优化与业务场景个性化定制 
-- 🗄️ **全链路数据管理**：覆盖数据采集、标注、存储的全流程治理
 
-------
 
-## 🚦 快速开始
-
-安装 AIMaaS SDK：
+# 🚦 快速开始
 
 ```bash
-pip install aimaas
+docker run crpi-wfhl7cyuhi65rl7p.cn-guangzhou.personal.cr.aliyuncs.com/fadsii/badou-aimaas:1.0
 ```
 
-部署你的首个模型（以 Hugging Face 模型为例）：
+源码启动
 
 ```python
-from aimaas import ModelService
-
-# 初始化服务
-service = ModelService(api_key="YOUR_API_KEY")
-
-# 部署模型
-deployment = service.deploy(
-    model_id="bert-base-uncased",
-    provider="huggingface",
-    instance_type="gpu.t4.medium",
-    min_instances=1,
-    max_instances=5
-)
-
-print(f"模型部署地址: {deployment.endpoint}")
-print(f"API 文档: {deployment.docs_url}")
-```
-
-配置环境变量：
-
-```bash
-export AIMaaS_API_KEY=your_api_key_here
-export HUGGINGFACE_TOKEN=your_hf_token
-# 其他服务商密钥按需添加
+git clone 
+# 初始化和运行前端
+cd badouai-maas
+npm install --registry=https://registry.npm.taobao.org
+# 启动服务
+npm run dev
+ 
+# 初始化和运行后端 回到项目根目录
+cd aimaas-server
+mvn package 
+# 把工程放到8080端口的tomcat的webapps
+# 运行成功后 访问http://127.0.0.1:8000/badouai-maas/#/
 ```
 
 ------
 
-## 🔌 调用模型示例
 
-```python
-import requests
 
-endpoint = "https://api.aimaas.com/v1/models/bert-base-uncased/predict"
-headers = {"Authorization": f"Bearer {API_KEY}"}
-payload = {"text": "AIMaaS 让 AI 部署变得轻而易举！"}
+# 支持训练的模型
 
-response = requests.post(endpoint, json=payload, headers=headers)
-print(response.json())
-# 输出: {'sentiment': 'positive', 'confidence': 0.97}
-```
-
-------
-
-## 🏗️ 平台架构
-
-#### 🔧 基础设施层（Infrastructure Layer）
-
-- 数据存储与计算集群
-  - 分布式数据湖（支持 CSV/Parquet/ 图像等多模态数据存储）
-  - 训练资源池（GPU/TPU 集群 + 分布式训练框架）
-- 数据处理引擎
-  - 流式数据处理（Flink/Kafka 集成，支持实时数据接入）
-  - 批量数据处理（Spark/Dask 集群，支持大规模数据预处理）
-
-#### 🧠 数据全链路层（Data Lifecycle Layer）
-
-- 数据采集与标注
-  - 多源数据接入平台（API/SDK/ETL 工具对接业务系统）
-  - 可视化标注工作台（支持文本 / 图像 / 语音标注，集成主动学习）
-- 数据治理中心
-  - 数据版本管理（版本控制、血缘追踪、质量评估）
-  - 数据增强引擎（自动化数据扩充、噪声过滤）
-- 特征工程平台
-  - 自动化特征生成（支持数值 / 文本 / 图像特征提取）
-  - 特征存储与检索（高效特征复用与版本管理）
-
-#### 🚀 模型训练与优化层（Training & Tuning Layer）
-
-- 自动化微调引擎
-  - 低代码微调界面（支持 Prompt Tuning/PEFT 等参数高效微调）
-  - 超参数搜索空间（贝叶斯优化 / 网格搜索策略）
-- 训练任务管理
-  - 分布式训练调度（支持单卡 / 多卡 / 混合精度训练）
-  - 训练任务监控（实时指标可视化、早停策略）
-- 模型优化工具链
-  - 量化压缩（INT8/INT4 量化，支持 LLM 模型轻量化）
-  - 模型蒸馏（Teacher-Student 架构，提升推理效率）
-
-#### 🧩 模型服务层（Model Service Layer）
-
-- 模型生命周期管理
-  - 从训练到部署的自动化流程（CI/CD 集成）
-  - 模型版本控制与 A/B 测试（流量动态切分）
-- 推理优化核心
-  - 自适应推理引擎（根据输入动态调整计算资源）
-  - 多模型集成服务（支持 ensemble/chain-of-thought 组合）
-
-#### 🌈 应用生态层（Application Ecosystem Layer）
-
-- 开发者工具链
-  - 数据 - 训练 - 部署一体化 SDK（Python/CLI 全流程 API）
-  - 可视化任务看板（数据处理 / 训练 / 推理全流程监控）
-- 行业解决方案
-  - 领域数据模板（金融 / 医疗 / 电商等行业数据集预处理流程）
-  - 微调任务模板（基于行业场景的预配置微调参数）
-
-------
+| 模型                                                         | 模型大小                         |
+| ------------------------------------------------------------ | -------------------------------- |
+| [Baichuan 2](https://huggingface.co/baichuan-inc)            | 7B/13B                           |
+| [ChatGLM3](https://huggingface.co/THUDM)                     | 6B                               |
+| [Command R](https://huggingface.co/CohereForAI)              | 35B/104B                         |
+| [BLOOM/BLOOMZ](https://huggingface.co/bigscience)            | 560M/1.1B/1.7B/3B/7.1B/176B      |
+| [DeepSeek (Code/MoE)](https://huggingface.co/deepseek-ai)    | 7B/16B/67B/236B                  |
+| [DeepSeek 2.5/3](https://huggingface.co/deepseek-ai)         | 236B/671B                        |
+| [DeepSeek R1 (Distill)](https://huggingface.co/deepseek-ai)  | 1.5B/7B/8B/14B/32B/70B/671B      |
+| [Falcon](https://huggingface.co/tiiuae)                      | 7B/11B/40B/180B                  |
+| [Falcon-H1](https://huggingface.co/tiiuae)                   | 0.5B/1.5B/3B/7B/34B              |
+| [Gemma/Gemma 2/CodeGemma](https://huggingface.co/google)     | 2B/7B/9B/27B                     |
+| [Gemma 3/Gemma 3n](https://huggingface.co/google)            | 1B/4B/6B/8B/12B/27B              |
+| [GLM-4/GLM-4-0414/GLM-Z1](https://huggingface.co/THUDM)      | 9B/32B                           |
+| [GLM-4.1V](https://huggingface.co/THUDM)*                    | 9B                               |
+| [GPT-2](https://huggingface.co/openai-community)             | 0.1B/0.4B/0.8B/1.5B              |
+| [Granite 3.0-3.3](https://huggingface.co/ibm-granite)        | 1B/2B/3B/8B                      |
+| [Hunyuan](https://huggingface.co/tencent/)                   | 7B                               |
+| [Index](https://huggingface.co/IndexTeam)                    | 1.9B                             |
+| [InternLM 2-3](https://huggingface.co/internlm)              | 7B/8B/20B                        |
+| [InternVL 2.5-3](https://huggingface.co/OpenGVLab)           | 1B/2B/8B/14B/38B/78B             |
+| [Kimi-VL](https://huggingface.co/moonshotai)                 | 16B                              |
+| [Llama](https://github.com/facebookresearch/llama)           | 7B/13B/33B/65B                   |
+| [Llama 2](https://huggingface.co/meta-llama)                 | 7B/13B/70B                       |
+| [Llama 3-3.3](https://huggingface.co/meta-llama)             | 1B/3B/8B/70B                     |
+| [Llama 4](https://huggingface.co/meta-llama)                 | 109B/402B                        |
+| [Llama 3.2 Vision](https://huggingface.co/meta-llama)        | 11B/90B                          |
+| [LLaVA-1.5](https://huggingface.co/llava-hf)                 | 7B/13B                           |
+| [LLaVA-NeXT](https://huggingface.co/llava-hf)                | 7B/8B/13B/34B/72B/110B           |
+| [LLaVA-NeXT-Video](https://huggingface.co/llava-hf)          | 7B/34B                           |
+| [MiMo](https://huggingface.co/XiaomiMiMo)                    | 7B                               |
+| [MiniCPM](https://huggingface.co/openbmb)                    | 0.5B/1B/2B/4B/8B                 |
+| [MiniCPM-o-2.6/MiniCPM-V-2.6](https://huggingface.co/openbmb) | 8B                               |
+| [Ministral/Mistral-Nemo](https://huggingface.co/mistralai)   | 8B/12B                           |
+| [Mistral/Mixtral](https://huggingface.co/mistralai)          | 7B/8x7B/8x22B                    |
+| [Mistral Small](https://huggingface.co/mistralai)            | 24B                              |
+| [OLMo](https://huggingface.co/allenai)                       | 1B/7B                            |
+| [PaliGemma/PaliGemma2](https://huggingface.co/google)        | 3B/10B/28B                       |
+| [Phi-1.5/Phi-2](https://huggingface.co/microsoft)            | 1.3B/2.7B                        |
+| [Phi-3/Phi-3.5](https://huggingface.co/microsoft)            | 4B/14B                           |
+| [Phi-3-small](https://huggingface.co/microsoft)              | 7B                               |
+| [Phi-4](https://huggingface.co/microsoft)                    | 14B                              |
+| [Pixtral](https://huggingface.co/mistralai)                  | 12B                              |
+| [Qwen (1-2.5) (Code/Math/MoE/QwQ)](https://huggingface.co/Qwen) | 0.5B/1.5B/3B/7B/14B/32B/72B/110B |
+| [Qwen3 (MoE)](https://huggingface.co/Qwen)                   | 0.6B/1.7B/4B/8B/14B/32B/235B     |
+| [Qwen2-Audio](https://huggingface.co/Qwen)                   | 7B                               |
+| [Qwen2.5-Omni](https://huggingface.co/Qwen)                  | 3B/7B                            |
+| [Qwen2-VL/Qwen2.5-VL/QVQ](https://huggingface.co/Qwen)       | 2B/3B/7B/32B/72B                 |
+| [Seed Coder](https://huggingface.co/ByteDance-Seed)          | 8B                               |
+| [Skywork o1](https://huggingface.co/Skywork)                 | 8B                               |
+| [StarCoder 2](https://huggingface.co/bigcode)                | 3B/7B/15B                        |
+| [TeleChat2](https://huggingface.co/Tele-AI)                  | 3B/7B/35B/115B                   |
+| [XVERSE](https://huggingface.co/xverse)                      | 7B/13B/65B                       |
+| [Yi/Yi-1.5 (Code)](https://huggingface.co/01-ai)             | 1.5B/6B/9B/34B                   |
+| [Yi-VL](https://huggingface.co/01-ai)                        | 6B/34B                           |
+| [Yuan 2](https://huggingface.co/IEITYuan)                    | 2B/51B/102B                      |
 
 
 
-### 🧰 数据与微调核心链路
+# 支持部署的模型
 
-数据源 → 数据采集平台 → 标注工作台 → 数据治理中心 → 特征工程平台 →       ↓    自动化微调引擎 → 训练任务管理 → 模型优化工具链 → 模型服务层 → 应用生态
+| 模型                                                  | 模型大小                     | 核心模态         |
+| ----------------------------------------------------- | ---------------------------- | ---------------- |
+| [Llama 3-3.3](https://huggingface.co/meta-llama)      | 1B/3B/8B/70B                 | 文本模态         |
+| [Mixtral 8x7B](https://huggingface.co/mistralai)      | 8x7B                         | 文本模态         |
+| [Qwen3 (MoE)](https://huggingface.co/Qwen)            | 0.6B/1.7B/4B/8B/14B/32B/235B | 文本模态         |
+| [InternVL 2.5-3](https://huggingface.co/OpenGVLab)    | 1B/2B/8B/14B/38B/78B         | 多模态（文图）   |
+| [LLaVA-NeXT](https://huggingface.co/llava-hf)         | 7B/8B/13B/34B/72B/110B       | 多模态（文图）   |
+| [Qwen2.5-VL](https://huggingface.co/Qwen)             | 2B/3B/7B/32B/72B             | 多模态（文图）   |
+| [Yi-VL](https://huggingface.co/01-ai)                 | 6B/34B                       | 多模态（文图）   |
+| [StarCoder 2](https://huggingface.co/bigcode)         | 3B/7B/15B                    | 文本模态（代码） |
+| [TeleChat2](https://huggingface.co/Tele-AI)           | 3B/7B/35B/115B               | 文本模态         |
+| [Llama 3.2 Vision](https://huggingface.co/meta-llama) | 11B/90B                      | 多模态（文图）   |
+| [Phi-3](https://huggingface.co/microsoft)             | 4B/14B                       | 文本模态         |
+| [ChatGLM3](https://huggingface.co/THUDM)              | 6B                           | 文本模态         |
+
+> 注：以上仅展示部分支持部署的模型，完整模型列表可前往 aimaas 平台查看。
 
 
 
-## 🧪 应用场景演示
+# 演示
 
-### 金融风控检测
+## 演示：模型一键部署流程
 
-```python
-# 部署风控模型组合
-service.deploy_ensemble(
-    models=["transaction-classifier", "anomaly-detector"],
-    routing_strategy="weighted"
-)
-```
+展示从「选择模型」到「启动服务」的全流程，包含版本选择、资源配置（CPU/GPU）、部署确认及启动成功提示。
 
-### 医疗影像分析
+![](assets/deploy-model.gif)
 
-```python
-# 批量处理医学影像
-results = service.batch_predict(
-    model="dicom-analyzer",
-    files=glob("scans/*.dcm"),
-    params={"resolution": "high"}
-)
-```
+## 演示：在线模型微调操作和微调后模型效果对比
 
-### 用户情感分析
+展示如何上传微调数据集、配置微调参数（学习率、迭代次数等）、启动微调任务及查看实时训练进度。
 
-```python
-# 构建实时分析流水线
-service.create_pipeline(
-    steps=[
-        {"model": "text-preprocessor", "input": "raw_text"},
-        {"model": "sentiment-analyzer", "input": "preprocessed_text"},
-        {"model": "trend-aggregator", "input": "sentiment_results"}
-    ]
-)
-```
 
-------
 
-## 🏢 企业级解决方案
 
-AIMaaS 支持四级应用模式：
 
-| 层级        | 目标用户   | 核心能力                |
-| ----------- | ---------- | ----------------------- |
-| L0 直接使用 | 业务人员   | 预构建模型应用          |
-| L1 快速定制 | 技术分析师 | Prompt 工程、小样本学习 |
-| L2 精调训练 | ML 工程师  | 模型适配、数据增强      |
-| L3 全栈开发 | 数据科学家 | 自定义模型开发、RLHF    |
+# 引用 
 
-------
+```markdown
+@inproceedings{zheng2024llamafactory,
+  title={LlamaFactory: Unified Efficient Fine-Tuning of 100+ Language Models},
+  author={Yaowei Zheng and Richong Zhang and Junhao Zhang and Yanhan Ye and Zheyan Luo and Zhangchi Feng and Yongqiang Ma},
+  booktitle={Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 3: System Demonstrations)},
+  address={Bangkok, Thailand},
+  publisher={Association for Computational Linguistics},
+  year={2024},
+  url={http://arxiv.org/abs/2403.13372}
+}
 
-## 📚 入门指南
+@inproceedings{kwon2023efficient,
+  title={Efficient Memory Management for Large Language Model Serving with PagedAttention},
+  author={Woosuk Kwon and Zhuohan Li and Siyuan Zhuang and Ying Sheng and Lianmin Zheng and Cody Hao Yu and Joseph E. Gonzalez and Hao Zhang and Ion Stoica},
+  booktitle={Proceedings of the ACM SIGOPS 29th Symposium on Operating Systems Principles},
+  year={2023}
+}
 
-- 部署第一个模型
-- 数据构建与多样训练
-- 模型/参数指南手册
-- 性能调优指南手册
+@misc{glm2024chatglm,
+      title={ChatGLM: A Family of Large Language Models from GLM-130B to GLM-4 All Tools}, 
+      author={Team GLM and Aohan Zeng and Bin Xu and Bowen Wang and Chenhui Zhang and Da Yin and Diego Rojas and Guanyu Feng and Hanlin Zhao and Hanyu Lai and Hao Yu and Hongning Wang and Jiadai Sun and Jiajie Zhang and Jiale Cheng and Jiayi Gui and Jie Tang and Jing Zhang and Juanzi Li and Lei Zhao and Lindong Wu and Lucen Zhong and Mingdao Liu and Minlie Huang and Peng Zhang and Qinkai Zheng and Rui Lu and Shuaiqi Duan and Shudan Zhang and Shulin Cao and Shuxun Yang and Weng Lam Tam and Wenyi Zhao and Xiao Liu and Xiao Xia and Xiaohan Zhang and Xiaotao Gu and Xin Lv and Xinghan Liu and Xinyi Liu and Xinyue Yang and Xixuan Song and Xunkai Zhang and Yifan An and Yifan Xu and Yilin Niu and Yuantao Yang and Yueyan Li and Yushi Bai and Yuxiao Dong and Zehan Qi and Zhaoyu Wang and Zhen Yang and Zhengxiao Du and Zhenyu Hou and Zihan Wang},
+      year={2024},
+      eprint={2406.12793},
+      archivePrefix={arXiv},
+      primaryClass={id='cs.CL' full_name='Computation and Language' is_active=True alt_name='cmp-lg' in_archive='cs' is_general=False description='Covers natural language processing. Roughly includes material in ACM Subject Class I.2.7. Note that work on artificial languages (programming languages, logics, formal systems) that does not explicitly address natural-language issues broadly construed (natural-language processing, computational linguistics, speech, text retrieval, etc.) is not appropriate for this area.'}
+}
 
-------
 
-## 🗺️ 发展路线图
+@misc{glm2024chatglm,
+      title={ChatGLM: A Family of Large Language Models from GLM-130B to GLM-4 All Tools},
+      author={Team GLM and Aohan Zeng and Bin Xu and Bowen Wang and Chenhui Zhang and Da Yin and Diego Rojas and Guanyu Feng and Hanlin Zhao and Hanyu Lai and Hao Yu and Hongning Wang and Jiadai Sun and Jiajie Zhang and Jiale Cheng and Jiayi Gui and Jie Tang and Jing Zhang and Juanzi Li and Lei Zhao and Lindong Wu and Lucen Zhong and Mingdao Liu and Minlie Huang and Peng Zhang and Qinkai Zheng and Rui Lu and Shuaiqi Duan and Shudan Zhang and Shulin Cao and Shuxun Yang and Weng Lam Tam and Wenyi Zhao and Xiao Liu and Xiao Xia and Xiaohan Zhang and Xiaotao Gu and Xin Lv and Xinghan Liu and Xinyi Liu and Xinyue Yang and Xixuan Song and Xunkai Zhang and Yifan An and Yifan Xu and Yilin Niu and Yuantao Yang and Yueyan Li and Yushi Bai and Yuxiao Dong and Zehan Qi and Zhaoyu Wang and Zhen Yang and Zhengxiao Du and Zhenyu Hou and Zihan Wang},
+      year={2024},
+      eprint={2406.12793},
+      archivePrefix={arXiv},
+      primaryClass={id='cs.CL' full_name='Computation and Language' is_active=True alt_name='cmp-lg' in_archive='cs' is_general=False description='Covers natural language processing. Roughly includes material in ACM Subject Class I.2.7. Note that work on artificial languages (programming languages, logics, formal systems) that does not explicitly address natural-language issues broadly construed (natural-language processing, computational linguistics, speech, text retrieval, etc.) is not appropriate for this area.'}
+}
 
-- #### 🌟 第一阶段：基础能力筑基（当前）
-
-  **核心目标**：构建稳定的模型服务基础框架，实现基础部署与调用能力
-
-  - 🚀模型全生命周期管理
-    - 完成模型注册、版本控制、一键部署 / 下线的标准化流程
-    - 支持 Hugging Face/LLaMA 等主流模型格式的兼容解析
-  - 🔧资源调度与弹性伸缩
-    - 实现基于负载的自动扩缩容（CPU/GPU 资源动态分配）
-    - 支持多实例部署与流量负载均衡
-  - 📊基础监控与日志
-    - 集成模型调用指标采集（QPS、延迟、成功率）
-    - 构建基础告警系统（阈值触发通知）
-
-  #### 🌟 第二阶段：功能深化拓展（2025.12）
-
-  **核心目标**：增强模型服务能力，满足企业级场景需求
-
-  - 🧠智能优化体系
-    - 实现模型自动调优（参数搜索、量化压缩）
-    - 集成动态批处理与推理优化引擎（TensorRT/ONNX Runtime）
-  - 🔄高级版本管理
-    - 支持 A/B 测试与多版本流量切分
-    - 实现模型热更新（不中断服务的版本升级）
-  - 🛡️企业级安全能力
-    - 增加细粒度访问控制（RBAC 权限体系）
-    - 集成数据加密传输与隐私保护（差分隐私预处理）
-
-  #### 🌟 第三阶段：生态与高级能力（2026）
-
-  **核心目标**：构建 AI 模型服务生态，支持复杂场景与前沿技术
-
-  - 🌐分布式服务架构
-    - 实现跨区域多集群部署（异地容灾与低延迟访问）
-    - 集成联邦学习框架（支持跨机构隐私计算）
-  - 🧩自动化工作流
-    - 开发可视化流水线设计器（支持模型组合与数据处理链）
-    - 实现模型漂移检测与自动再训练（闭环优化）
-  - 🧠增强型 AI 能力
-    - 集成可解释 AI（XAI）工具（特征重要性分析、决策可视化）
-    - 支持多模态模型服务（文本 / 图像 / 语音统一部署接口）
-
-------
-
-## 🤝 加入贡献
-
-欢迎参与开发！阅读 贡献指南 并加入 Discord 社区。
-
-------
-
-## 📜 引用声明
-
-若在研究中使用了 AIMaaS，请引用：
-
-```bibtex
-@software{aimaas2025,
-  title = {AIMaaS: AI Model as a Service Platform},
-  author = {AIMaaS Team@badousoft},
-  year = {2025},
-  publisher = {GitHub},
-  url = {https://github.com/aimaas/aimaas-core}
+@misc{2023xtuner,
+    title={XTuner: A Toolkit for Efficiently Fine-tuning LLM},
+    author={XTuner Contributors},
+    howpublished = {\url{https://github.com/InternLM/xtuner}},
+    year={2023}
 }
 ```
 
-## 📃 许可协议
 
-Apache 2.0 © 2025 AIMaaS 团队
+
+**AIMAAS 项目许可证**
+
+
+
+本项目（含源代码、文档等）受《GNU 通用公共许可证第 3 版》（GPLv3）及以下补充条款约束：
+
+1. **授权范围**：个人非商业使用可免费获取、使用、复制、修改，衍生作品需适用相同许可证；商业使用（含集成到商业产品、商业服务等）须获项目方书面授权并支付费用。
+2. **传播与修改**：传播时需保留原始版权及许可证信息；修改后的作品须明确标注修改内容，且受本许可证约束。
+3. **限制与免责**：禁止用于违法或侵权活动；项目方不提供任何担保，使用风险由使用者自行承担。
+4. **适用法律**：受中华人民共和国法律管辖，争议先协商，协商不成由项目方所在地法院管辖。
+
+补充条款与 GPLv3 冲突时，以 GPLv3 强制性规定为准。项目方保留许可证解释及修改权，修改后通过官方渠道发布。

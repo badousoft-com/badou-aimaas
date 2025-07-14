@@ -1,0 +1,26 @@
+##消息处理属性配置文件
+##消息指邮件，短信等，用于对系统中关键信息出现某种状态时进行预警告警
+##公共配置项
+message:
+  system:
+    identity: aimaaserp
+  #以下是邮件配置项
+  #邮件控制开关，为1时启用邮件功能，0不启用
+  email:
+    switch: false
+    #邮件服务器IP或域名地址,注册的新浪地址：202.108.5.185，更改为163邮箱
+    smtpserver: 123456.com
+    #权限用户名
+    smtpuser:  global\123456
+    #权限用户名对应的密码
+    smtppwd: 123456@456.com
+    #邮件内容的类型
+    content:
+      type: text/html
+      charset: 123
+    #默认接收地址（邮箱发址），多个以分号分隔
+    defaultToAddress: global\123
+    #默认的发送人
+    sendAddress: global\456
+    #是否是ssl:
+    isSSL: true

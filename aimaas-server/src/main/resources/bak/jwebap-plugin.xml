@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+	<!--component-->
+	<component name="HttpComponent" type="org.jwebap.plugin.tracer.http.HttpComponent">
+		<component-param>
+			<name>trace-filter-active-time</name>
+			<value>1000</value>
+			<description>(ms) timings filter's over time</description>
+		</component-param>
+		<component-param>
+			<name>trace-max-size</name>
+			<value>1000</value>
+			<description>max over-time trace size</description>
+		</component-param>
+	</component>
+	<component name="MethodComponent" type="org.jwebap.plugin.tracer.method.MethodComponent">
+		<component-param>
+			<name>trace-filter-active-time</name>
+			<value>2000</value>
+			<description>(ms) timings filter's over time</description>
+		</component-param>
+		<component-param>
+			<name>trace-max-size</name>
+			<value>100</value>
+			<description>max over-time trace size</description>
+		</component-param>
+		<component-param  style="longtext">
+			<name>detect-clazzs</name>
+			<value></value>
+			<description>
+			package name and class name that monitored by MethodComponent,
+			e.g.: 'test.*;test.Test' , divided by ';'
+			</description>
+		</component-param>
+	</component>
+	<component name="JdbcComponent" type="org.jwebap.plugin.tracer.jdbc.JdbcComponent">
+		<component-param>
+			<name>trace-filter-active-time</name>
+			<value>2000</value>
+			<description>(ms) timings filter's over time</description>
+		</component-param>
+		<component-param>
+			<name>trace-max-size</name>
+			<value>1000</value>
+			<description>max over-time trace size</description>
+		</component-param>
+		<component-param  style="longtext">
+			<name>connection-listener</name>
+			<value>
+			org.jwebap.plugin.tracer.http.ServletOpenedConnectionListener;org.jwebap.plugin.tracer.method.MethodOpenedConnectionListener
+			</value>
+			<description>Connection Listener</description>
+		</component-param>
+		<component-param  style="longtext">
+			<name>driver-clazzs</name>
+			<value>com.badou.tools.common.dbpool.ProxoolDataSource</value>
+			<description>
+			1)Local datasource: set your ConnectionManagerClass,or the connection pool 's datasource. If you have more than one class ,divided by ';'.
+												c3p0:com.mchange.v2.c3p0.ComboPooledDataSource; 
+												dbcp: org.apache.commons.dbcp.BasicDataSource
+												Also,other class. Jwebap will inject driver-clazzs,and detect any connection and datasource object it's method renturn.
+												Note:  'driver-clazzs =jdbc driver' is deprecated. Beacause of connection pool, set 'driver-clazzs =jdbc driver', jwebap will find out all connection is leaked.
+			2)JNDI datasource: If your application uses jndi datasource, you can set the class which manages connections in your application as driver, e.g.: 'com.china.telecom.ConnectionManager'. Else if you use spring to get jndi datasource ,you also can set driver-clazzs=org.springframework.jndi.JndiObjectFactoryBean.JdbcComponent will inject this class to proxy all connection the class's method return.
+
+			</description>
+		</component-param>
+	</component>
+	
+	<!--action-mapping-->
+	<action-mapping>
+		<!--HttpComponent-->
+		<action path="/http/tracer" component="HttpComponent"  type="org.jwebap.plugin.tracer.http.TracerAction" template="resources/view/http_tracer.ctl" />
+		<action path="/http/tracer/datas" component="HttpComponent"  type="org.jwebap.plugin.tracer.http.TraceDatasAction"  />
+		<action path="/http/tracer/clear" component="HttpComponent"  type="org.jwebap.plugin.tracer.http.TracesClearAction"  />
+		<action path="/http/stat" component="HttpComponent"  type="org.jwebap.plugin.tracer.http.StatAction" template="resources/view/http_stat.ctl" />
+		<action path="/http/stat/datas" component="HttpComponent"  type="org.jwebap.plugin.tracer.http.StatDatasAction"  />
+		<!--MethodComponent-->
+		<action path="/method/tracer" component="MethodComponent"  type="org.jwebap.plugin.tracer.method.TracerAction" template="resources/view/method_tracer.ctl" />
+		<action path="/method/tracer/datas" component="MethodComponent"  type="org.jwebap.plugin.tracer.method.TraceDatasAction"  />
+		<action path="/method/tracer/clear" component="MethodComponent"  type="org.jwebap.plugin.tracer.method.TracesClearAction"  />
+		<action path="/method/stat" component="MethodComponent"  type="org.jwebap.plugin.tracer.method.StatAction" template="resources/view/method_stat.ctl" />
+		<action path="/method/stat/datas" component="MethodComponent"  type="org.jwebap.plugin.tracer.method.StatDatasAction"  />
+		<!--JdbcComponent-->
+		<action path="/jdbc/tracer" component="JdbcComponent"  type="org.jwebap.plugin.tracer.jdbc.TracerAction" template="resources/view/jdbc_tracer.ctl" />
+		<action path="/jdbc/tracer/datas" component="JdbcComponent"  type="org.jwebap.plugin.tracer.jdbc.TraceDatasAction"  />
+		<action path="/jdbc/tracer/clear" component="JdbcComponent"  type="org.jwebap.plugin.tracer.jdbc.TracesClearAction"  />	
+	</action-mapping>
+</plugin>

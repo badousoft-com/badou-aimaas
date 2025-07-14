@@ -1,0 +1,15 @@
+package com.badou.project.maas.planlink.web;
+
+import org.springframework.stereotype.Controller;
+
+import com.badou.designer.jdbc.common.web.BaseCommonSaveAction;
+
+/**
+ * @author badousoft
+ * @created 2024-05-09 16:48:55.91
+ * @todo 微调方案关联 保存实现类
+ */
+@Controller
+public class PlanLinkSaveAction extends BaseCommonSaveAction {
+	
+}

@@ -1,0 +1,43 @@
+spring:
+  #jpa相关配置
+  jpa:
+    #数据库类型
+    database: @maven.spring.jpa.database@
+    #是否打印sql
+    show-sql: @maven.spring.jpa.showSql@
+    #绑定session到视图，保证事务一致性
+    open-in-view: true
+    #数据源平台
+    database-platform: @maven.spring.jpa.databasePlatform@
+    #缓存
+    cache:
+      #类型
+      type: ehcache
+      #ehcache相关配置
+      ehcache:
+        #ehcache配置文件
+        config: classpath:ehcache/ehcache-spring.xml
+    #hibernate相关配置
+    hibernate:
+      #ddl
+      ddl-auto: @maven.spring.jpa.hibernate.ddlAuto@
+      naming-strategy: org.hibernate.cfg.ImprovedNamingStrategy
+      dialect: org.hibernate.dialect.MySQL5Dialect
+    #配置
+    properties:
+      open-in-view: true
+      hibernate:
+        show_sql: true
+        format-sql: true
+        #懒加载
+        enable_lazy_load_no_trans: true
+        current_session_context_class: org.springframework.orm.hibernate5.SpringSessionContext
+        cache:
+          #是否启用查询缓存
+          use_query_cache: true
+          #是否启用二级缓存
+          use_second_level_cache: true
+          #指定配置文件
+          provider_configuration_file_resource_path: ehcache.xml
+          region:
+            factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
