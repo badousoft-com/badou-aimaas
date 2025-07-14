@@ -49,7 +49,7 @@
 # 🚦 快速开始
 
 ```bash
-docker run crpi-wfhl7cyuhi65rl7p.cn-guangzhou.personal.cr.aliyuncs.com/fadsii/badou-aimaas:1.0
+docker run -d -p 8080:8080 -e BASE_URL=127.0.0.1:8080 crpi-wfhl7cyuhi65rl7p.cn-guangzhou.personal.cr.aliyuncs.com/fadsii/badou-aimaas:1.0
 ```
 
 源码启动
