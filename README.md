@@ -55,7 +55,8 @@
 - 1、需要先安装docker
 - 2、可以通过以下命令启动下载镜像与启动服务
 - 3、可以修改8080端口。注：可选项，可直接修改-p 8080:8080 -e BASE_URL=127.0.0.1:8080
-- 4、默认的访问路径127.0.0.1:8080/
+- 4、默认的访问路径[127.0.0.1:8080/](http://127.0.0.1:8080/badouai-maas/)
+- 5、初始化帐号密码：aimaas/aimaas2025
   
 ```bash
 docker run -d -p 8080:8080 -e BASE_URL=127.0.0.1:8080 crpi-wfhl7cyuhi65rl7p.cn-guangzhou.personal.cr.aliyuncs.com/fadsii/badou-aimaas:1.0
