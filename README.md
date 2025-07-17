@@ -20,12 +20,12 @@
   4卡：运行DeepSeek-r1-32b，提供语言推理服务。  【注：4卡2080TI建议用户数载10以内。可以升级到4090显卡，提升并发与会话响应速度】
   2卡：运行Qwen2.5-vl-7b，提供图像识别推理服务
 
-  - 服务器B：（AIMaaS平台节点服务，只需元安装k8s加入AIMaaS平台管理即可）。
+  - 服务器B：（AIMaaS平台节点服务，只需已安装k8s加入AIMaaS平台管理即可）。
   4卡：运行Qwen3-32b，提供语言交互服务
   1卡：运行Bge-large*，向量化模型
   1卡：运行Bge-rerank模型
 
-  - 服务器C：（AIMaaS平台节点服务，只需元安装k8s加入AIMaaS平台管理即可）
+  - 服务器C：（AIMaaS平台节点服务，只需已安装k8s加入AIMaaS平台管理即可）
   2卡：运行Qwen2.5-14b，提供语言服务，用于问题分类，简单问题处理，工具调用等
   4卡：用于模型微调训练，支持对7b、14b以下模型进行微调【注：根据不同的训练参数，可能时间周期比较长，但如果只是lora模式且轮数较少，可以轻度微调模型，增加关键业务问题的解答能力与自我认知能力】
 
@@ -50,25 +50,26 @@
 - 1、需要先安装docker
 - 2、可以通过以下命令启动下载镜像与启动服务
 - 3、可以修改8080端口。注：可选项，可直接修改-p 8080:8080 -e BASE_URL=127.0.0.1:8080
-- 4、默认的访问路径[127.0.0.1:8080/](http://127.0.0.1:8080/badouai-maas/)
+- 4、默认的访问路径[127.0.0.1:8080/badouai-maas/](http://127.0.0.1:8080/badouai-maas/)
 - 5、初始化帐号密码：aimaas/aimaas2025
   
 ```bash
-docker run -d -p 8080:8080 -e BASE_URL=127.0.0.1:8080 crpi-wfhl7cyuhi65rl7p.cn-guangzhou.personal.cr.aliyuncs.com/fadsii/badou-aimaas:1.0
+docker run -d -p 8080:8080 -e BASE_URL=127.0.0.1:8080 \
+crpi-wfhl7cyuhi65rl7p.cn-guangzhou.personal.cr.aliyuncs.com/fadsii/badou-aimaas:1.0
 ```
 
 ## 源码启动方式
 
 ```python
-git clone 
+git clone https://github.com/badousoft-com/badou-aimaas
 # 初始化和运行前端
-cd badouai-maas
+cd web
 npm install --registry=https://registry.npm.taobao.org
 # 启动服务
 npm run dev
  
 # 初始化和运行后端 回到项目根目录
-cd aimaas-server
+cd backend
 mvn package 
 # 把工程放到8080端口的tomcat的webapps
 # 运行成功后 访问http://127.0.0.1:8000/badouai-maas/#/
