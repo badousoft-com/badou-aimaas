@@ -5,11 +5,12 @@
 </h3>
 <h4 align="center">
     <p>
-        <a href="https://github.com/huggingface/transformers/blob/main/i18n/README_zh-hant.md">English</a> |
+        <a href="https://github.com/badousoft-com/badou-aimaas/blob/main/README.md">English</a> |
         <b>简体中文</b> |
-        <a href="https://github.com/huggingface/transformers/blob/main/i18n/README_zh-hant.md">繁體中文</a> |
+        <a href="https://github.com/badousoft-com/badou-aimaas/blob/main/i18n/README_zh-hans.md">繁體中文</a> |
     </p>
 </h4>
+
 
 
 AIMaaS平台是由八斗AI技术团队研发的"一站式模型服务管理平台"，是一款集模型部署与管理、模型微调训练、算力资源管理等功能于一体的模型服务平台，目标是帮助企业快速实现大模型私有化部署与应用，支持将一些企业或者组织专业的问答只是微调至应用模型中，快速推进企业业务智能化的发展。
