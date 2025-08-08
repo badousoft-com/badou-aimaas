@@ -81,13 +81,13 @@ docker run -d -p 8080:8080 -e BASE_URL=127.0.0.1:8080 crpi-wfhl7cyuhi65rl7p.cn-g
 ```python
 git clone 
 # Initialize and run the frontend
-cd web
+cd webroot
 npm install --registry=https://registry.npm.taobao.org
 # Start the service
 npm run dev
  
 # Initialize and run the backend (return to the project root directory)
-cd aimaas-server
+cd badouai-maas-platform
 mvn package 
 # Place the project in the webapps directory of Tomcat running on port 8080
 # After successful operation, visit http://127.0.0.1:8000/badouai-maas/#/

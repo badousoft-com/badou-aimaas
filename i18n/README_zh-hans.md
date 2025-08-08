@@ -77,13 +77,13 @@ docker run -d -p 8080:8080 -e BASE_URL=127.0.0.1:8080 crpi-wfhl7cyuhi65rl7p.cn-g
 ```python
 git clone 
 # 初始化和运行前端
-cd web
-npm install --registry=https://registry.npm.taobao.org
+cd webroot
+npm install
 # 启动服务
 npm run dev
  
 # 初始化和运行后端 回到项目根目录
-cd aimaas-server
+cd badouai-maas-platform
 mvn package 
 # 把工程放到8080端口的tomcat的webapps
 # 运行成功后 访问http://127.0.0.1:8000/badouai-maas/#/
