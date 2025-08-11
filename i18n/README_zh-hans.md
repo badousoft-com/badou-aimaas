@@ -6,10 +6,10 @@
 <h4 align="center">
     <p>
         <a href="https://github.com/badousoft-com/badou-aimaas/blob/main/README.md">English</a> |
-        <b>简体中文</b> |
-        <a href="https://github.com/badousoft-com/badou-aimaas/blob/main/i18n/README_zh-hans.md">繁體中文</a> |
+        <b>简体中文</b>
     </p>
 </h4>
+
 
 
 

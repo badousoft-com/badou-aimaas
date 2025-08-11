@@ -3,14 +3,13 @@
 <h3 align="center">
     <p>AIMaaS Platform - Empower you to quickly implement privatized AI capabilities, kick off a new era of intelligence with one click, and fully embrace the future!🤖</p>
 </h3>
-
 <h4 align="center">
     <p>
         <b>English</b> |
-        <a href="https://github.com/badousoft-com/badou-aimaas/blob/main/i18n/README_zh-hans.md">简体中文</a> |
-        <a href="https://github.com/badousoft-com/badou-aimaas/blob/main/i18n/README_zh-hans.md">繁體中文</a> |
+        <a href="https://github.com/badousoft-com/badou-aimaas/blob/main/i18n/README_zh-hans.md">简体中文</a>
     </p>
 </h4>
+
 
 The AIMaaS platform is a "one-stop model service management platform" developed by the Badou AI technical team. It is an integrated model service platform that combines functions such as model deployment and management, model fine-tuning training, and computing resource management. Its goal is to help enterprises quickly realize the privatized deployment and application of large models, support the fine-tuning of professional Q&A knowledge from enterprises or organizations into application models, and accelerate the development of enterprise business intelligence.
 
