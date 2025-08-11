@@ -249,13 +249,10 @@ Shows how to upload fine-tuning datasets, configure fine-tuning parameters (lear
 
 
 
-# AIMAAS Project License****
+# License
 
-This project (including source code, documents, etc.) is subject to the "GNU General Public License Version 3" (GPLv3) and the following supplementary terms:
+Licensed under The GNU General Public License version 3 (GPLv3) (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
-1. **Scope of License**: Individuals may obtain, use, copy, and modify the project free of charge for non-commercial purposes. Derivative works must be subject to the same license. Commercial use (including integration into commercial products, commercial services, etc.) must obtain written authorization from the project owner and pay the relevant fees.
-2. **Distribution and Modification**: When distributing, the original copyright and license information must be retained. Modified works must clearly indicate the modified content and be subject to this license.
-3. **Restrictions and Disclaimers**: Use for illegal or infringing activities is prohibited. The project owner does not provide any guarantees, and users shall bear the risks of use on their own.
-4. **Governing Law**: This license shall be governed by the laws of the People's Republic of China. Disputes shall first be resolved through negotiation; if negotiation fails, the jurisdiction shall be with the court where the project owner is located.
+https://www.gnu.org/licenses/gpl-3.0.html
 
-In case of any conflict between the supplementary terms and GPLv3, the mandatory provisions of GPLv3 shall prevail. The project owner reserves the right to interpret and modify the license, and any modifications will be released through official channels.
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
