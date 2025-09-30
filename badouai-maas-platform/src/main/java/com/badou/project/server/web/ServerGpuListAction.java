@@ -5,11 +5,19 @@ import com.alibaba.fastjson.JSONObject;
 import com.badou.brms.base.support.struts.JsonReturnBean;
 import com.badou.project.cache.util.JedisUtil;
 import com.badou.project.common.webparams.util.JsonResultUtil;
+import com.badou.project.exception.DataEmptyException;
+import com.badou.project.exception.DataValidException;
+import com.badou.project.gpucalc.BaseGpuCalcHandler;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.kubernetes.handler.KubernetesExecHandler;
 import com.badou.project.kubernetes.handler.KubernetesPodHandler;
+import com.badou.project.maas.MaasConst;
 import com.badou.project.maas.common.FileControllerService;
+import com.badou.project.maas.modelsync.model.ModelSyncTaskEntity;
 import com.badou.project.maas.modelsync.service.IModelSyncTaskService;
+import com.badou.project.maas.modelwarehouse.service.IModelWarehouseService;
+import com.badou.project.mq.ModelSyncTaskMqReceiver;
+import com.badou.project.mq.TaskMqSender;
 import com.badou.project.server.model.K8sServerConfEntity;
 import com.badou.project.server.model.ServerGpuEntity;
 import com.badou.project.server.model.ServerModelDTO;
@@ -25,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -47,8 +56,8 @@ public class ServerGpuListAction extends BaseCommonListAction {
     private FileControllerService fileControllerService;
     @Autowired
     private IModelSyncTaskService modelSyncTaskService;
-//    @Autowired
-//    private ModelSyncTaskMqReceiver modelSyncTaskMqReceiver;
+    @Autowired
+    private ModelSyncTaskMqReceiver modelSyncTaskMqReceiver;
 
     @PostMapping
     public JSONObject getServerGpu(@RequestParam String serverId,String defaultSearchParam){
@@ -65,11 +74,11 @@ public class ServerGpuListAction extends BaseCommonListAction {
     @PostMapping
     public JsonReturnBean buildModelSize(String path,@RequestParam(required = true) String serverId) throws Exception {
         if (StringUtils.isEmpty(path)){
-            return JsonResultUtil.error();
+            return JsonResultUtil.paramsError();
         }
-        KubernetesApiClient kubernetesApiClient1 = FileControllerService.getCacheK8sClient(serverId);
-        JSONObject jsonObject = fileControllerService.execModelCommand(kubernetesApiClient1.getServer(), new String[]{"du", "-sh", path});
-        if (jsonObject.getBoolean("success")){
+        KubernetesApiClient kubernetesApiClient = FileControllerService.getCacheK8sClient(serverId);
+        JSONObject jsonObject = fileControllerService.execModelCommand(kubernetesApiClient.getServer(), new String[]{"du", "-sh", path});
+        if (jsonObject.getString("msg").contains(path)){
             return JsonResultUtil.success(jsonObject.getString("msg").split("\t")[0]);
         }
         return JsonResultUtil.error();
@@ -115,7 +124,7 @@ public class ServerGpuListAction extends BaseCommonListAction {
         List<ServerModelDTO> serverModelDTOS = new ArrayList<>();
         //获取该服务器的文件操作节点
         try {
-            KubernetesApiClient kubernetesApiClient = FileControllerService.getCacheK8sClient(serverId);
+            KubernetesApiClient kubernetesApiClient = FileControllerService.getCustomClient(serverId);
             // 获取文件夹列表
             K8sServerConfEntity server = kubernetesApiClient.getServer();
 
@@ -125,6 +134,7 @@ public class ServerGpuListAction extends BaseCommonListAction {
                 //等待服务running
                 filePods = kubernetesPodHandler.getPodByLabelApp(kubernetesApiClient, FileControllerService.deploymentName, FileControllerService.deploymentName + "-" + server.getCode());
                 while (filePods.size()!=1){
+                    TimeUnit.SECONDS.sleep(1);
                     filePods = kubernetesPodHandler.getPodByLabelApp(kubernetesApiClient, FileControllerService.deploymentName, FileControllerService.deploymentName + "-" + server.getCode());
                     logger.info("等待初始化完成");
                 }

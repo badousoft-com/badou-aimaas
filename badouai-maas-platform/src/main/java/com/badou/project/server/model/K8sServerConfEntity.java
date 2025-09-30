@@ -2,7 +2,6 @@ package com.badou.project.server.model;
 
 import com.badou.brms.base.support.hibernate.used.AppBaseEntity;
 import io.swagger.annotations.ApiModelProperty;
-import io.swagger.models.auth.In;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.Column;
@@ -18,6 +17,10 @@ import javax.persistence.Table;
 @Table(name = "fbpt_k8s_server_conf")
 @Where(clause = "FLG_DELETED=0")
 public class K8sServerConfEntity extends AppBaseEntity {
+
+    @ApiModelProperty("Cuda工具包目录")
+    @Column(name = "cuda_toolkit_dir", unique = false, nullable = true, insertable = true, updatable = true)
+    private String cudaToolkitDir;
 
     @ApiModelProperty("模型路径")
     @Column(name = "model_paths", unique = false, nullable = true, insertable = true, updatable = true)
@@ -98,6 +101,14 @@ public class K8sServerConfEntity extends AppBaseEntity {
     @ApiModelProperty("服务器文件挂载路径")
     @Column(name = "volumn_path", unique = false, nullable = true, insertable = true, updatable = true)
     private String volumnPath;
+
+    public String getCudaToolkitDir() {
+        return cudaToolkitDir;
+    }
+
+    public void setCudaToolkitDir(String cudaToolkitDir) {
+        this.cudaToolkitDir = cudaToolkitDir;
+    }
 
     public String getModelPaths() {
         return modelPaths;

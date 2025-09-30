@@ -5,6 +5,8 @@ import com.badou.brms.dboperation.query.QueryOperSymbolEnum;
 import com.badou.brms.dboperation.query.support.QueryHibernatePlaceholderParam;
 import com.badou.project.common.exception.ParamErrorException;
 import com.badou.project.common.webparams.util.JsonResultUtil;
+import com.badou.project.exception.DataExecFailException;
+import com.badou.project.exception.DataValidException;
 import com.badou.project.kubernetes.KubernetesConstants;
 import com.badou.project.kubernetes.TaskConst;
 import com.badou.project.kubernetes.config.KubernetesConfig;
@@ -16,13 +18,14 @@ import com.badou.project.kubernetes.handler.KubernetesPodHandler;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.kubernetes.util.StringHandlerUtil;
 import com.badou.project.kubernetes.vo.DeployAppVo;
+import com.badou.project.maas.MaasConst;
 import com.badou.tools.common.util.StringUtils;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Yaml;
-import jodd.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.internal.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,9 +44,25 @@ import java.util.concurrent.TimeUnit;
 public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
 
     @Autowired
-    private KubernetesNameSpaceHandler kubernetesNameSpaceHandler;
-    @Autowired
     private KubernetesErrorHandler kubernetesErrorHandler;
+    @Autowired
+    private KubernetesNameSpaceHandler kubernetesNameSpaceHandler;
+
+    @Override
+    public String execCommand(KubernetesApiClient kubernetesApiClient, String nameSpace, V1Pod v1Pod, String[] commands) throws IOException, ApiException {
+        // lm:基础类的命令执行内容已废弃 请使用KubernetesExecHandlerImpl
+//        Exec exec = new Exec(kubernetesApiClient.getApiClient());
+//        Process proc = exec.exec(v1Pod, commands, "",true, false);
+//        log.info("命名空间"+nameSpace+",的"+v1Pod.getMetadata().getName()+"容器执行命令:");
+//        for(String command:commands){
+//            log.info(command);
+//        }
+//        log.info("命令结束");
+//        String result = StringHandlerUtil.readTextAli(proc.getInputStream());
+//        log.info("命令执行结果:"+result);
+//        return result;
+        return null;
+    }
 
     @Override
     public V1Deployment getOneDeployment(KubernetesApiClient kubernetesApiClient,String nameSpace, String deploymentName) throws ApiException {
@@ -59,6 +78,9 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
 
     @Override
     public V1Pod createPodByParams(String imageName, KubernetesApiClient kubernetesApiClient, int gpuCount, String nameSpace, String appCode,DeployAppVo deployAppVo) throws ApiException {
+//        deployAppVo.setCommands(new String[]{"sleep"});
+//        String[] args = new String[]{"infinity"};
+//        deployAppVo.setArgs(Arrays.asList(args));
 
         List<V1LocalObjectReference> secrets = new ArrayList<>();
         secrets.add(new V1LocalObjectReference().name(StringUtils.isEmpty(deployAppVo.getSecretName())?"badouregistrykey":deployAppVo.getSecretName()));
@@ -160,6 +182,13 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
     }
 
     @Override
+    public V1PodList getAllPods(KubernetesApiClient kubernetesApiClient) throws ApiException {
+        V1PodList list =
+                kubernetesApiClient.getCoreV1Api().listPodForAllNamespaces(null, null, null, null, null, null, null, null, null, null);
+        return list;
+    }
+
+    @Override
     public V1PodList getAllPodByNameSpace(KubernetesApiClient kubernetesApiClient,String nameSpace) throws ApiException {
         if(StringUtils.isEmpty(nameSpace)){
             return null;
@@ -167,8 +196,150 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
         V1PodList list = kubernetesApiClient.getCoreV1Api().listNamespacedPod(nameSpace, null, null, null, null, null, null, null, null, null, null);
         return list;
     }
+
     @Override
-    public String createDeploymentAndDeploy(KubernetesApiClient kubernetesApiClient,String nameSpace,String appCode, String imageName,int replicas,boolean isTest,String secretName,DeployAppVo deployAppVo) throws Exception {
+    public String createDeployment(KubernetesApiClient kubernetesApiClient,String nameSpace,String appName, String imageName, String imageTag, int replicas) throws Exception {
+        return createDeploymentAndDeploy(kubernetesApiClient,nameSpace,appName,imageName,replicas,true,null);
+    }
+
+    @Override
+    public String createLimitDeployment(KubernetesApiClient kubernetesApiClient,String nameSpace, String appCode, String imageName, String imageTag, int replicas, V1ResourceRequirements resourceConfig) throws ApiException, ParamErrorException {
+        V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
+        imagePullSecret.setName(KubernetesConfig.getImagePullSecrets());
+        //镜像全名=镜像名字:镜像标签
+        String imageAllName = imageName+":"+imageTag;
+        //端口暴露服务的对应的是/ Service.Spec.Selector下的值
+        Map<String,String> selectLabels = new HashMap<>();
+        selectLabels.put("app",appCode);
+        selectLabels.put("logkey",nameSpace+"-"+appCode);
+        V1Deployment body = new V1DeploymentBuilder()
+                .withApiVersion("apps/v1")
+                .withKind(KubernetesConstants.K8S_DEPLOY_DEPLOYMENT_NAME)
+                .withMetadata(new V1ObjectMetaBuilder()
+                        .withName(appCode)
+                        .withNamespace(nameSpace)
+                        .withLabels(selectLabels)
+                        .build())
+                .withSpec(new V1DeploymentSpecBuilder()
+                        //设置默认副本数
+                        .withReplicas(replicas)
+                        //设置选择器
+                        .withSelector(new V1LabelSelectorBuilder()
+                                .withMatchLabels(selectLabels)
+                                .build())
+                        //设置docker镜像模板
+                        .withTemplate(new V1PodTemplateSpecBuilder()
+                                .withMetadata(new V1ObjectMetaBuilder()
+                                        .withLabels(selectLabels)
+                                        .build())
+                                .withSpec(new V1PodSpecBuilder()
+                                        .withContainers(new V1ContainerBuilder()
+                                                .withName(appCode)//设置docker名
+                                                .withImage(imageAllName)//设置 docker镜像名
+                                                .withImagePullPolicy("Always")//镜像本地拉去策略
+                                                //.withCommand("/bin/bash","-ce","tail -f /dev/null")//命令
+                                                //配置资源限制
+                                                .withResources(resourceConfig)
+                                                .build()).
+                                                withImagePullSecrets(imagePullSecret)
+                                        .build())
+                                .build())
+                        .build())
+                .build(); // V1Deployment
+        return null;
+    }
+
+    @Override
+    public String createMiddleDeployment(DeployAppVo deployAppVo) throws Exception {
+        String appCode = deployAppVo.getAppCode();
+        KubernetesApiClient kubernetesApiClient = deployAppVo.getKubernetesApiClient();
+        String imageName = deployAppVo.getImageName();
+        String secretName = deployAppVo.getSecretName();
+        int replicas = deployAppVo.getReplicas();
+        String nameSpace = deployAppVo.getNameSpace();
+        List<V1EnvVar> envVarList = deployAppVo.getEnvVarList();
+
+        //应用名字禁止出现下划线
+        if(deployAppVo.getAppCode().contains("_")){
+            throw new ParamErrorException("应用编码禁止出现下划线");
+        }
+        if(StringHandlerUtil.isContainChinese(deployAppVo.getAppCode())){
+            throw new ParamErrorException("应用编码禁止出现中文");
+        }
+
+        ArrayList<V1VolumeMount> v1VolumeMounts = deployAppVo.getV1VolumeMounts();
+
+        //宿主机存储路径
+        //234：/home/kube_filestore
+        //239：/data/kube_filestore
+        //240：/home/kube_filestore
+        String storePath = "/home/kube_filestore/outdir/"+deployAppVo.getAppCode();
+        //20230413 lm 变更为从数据库读取
+        if(StringUtil.isBlank(kubernetesApiClient.getServer().getVolumnPath())){
+            throw new Exception("无效的挂载路径");
+        }
+        storePath = kubernetesApiClient.getServer().getVolumnPath()+"/outdir/"+appCode;
+        if(imageName.contains("none")){
+            throw new ApiException("错误的镜像名字");
+        }
+        V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
+        imagePullSecret.setName(secretName);
+        //端口暴露服务的对应的是/ Service.Spec.Selector下的值
+        Map<String,String> selectLabels = new HashMap<>();
+        selectLabels.put("app",appCode);
+        selectLabels.put("logkey",nameSpace+"-"+appCode);
+        V1Deployment body = new V1DeploymentBuilder()
+                .withApiVersion("apps/v1")
+                .withKind(KubernetesConstants.K8S_DEPLOY_DEPLOYMENT_NAME)
+                .withMetadata(new V1ObjectMetaBuilder()
+                        .withName(appCode)
+                        .withNamespace(nameSpace)
+                        .withLabels(selectLabels)
+                        .build())
+                .withSpec(new V1DeploymentSpecBuilder()
+                        //设置默认副本数
+                        .withReplicas(replicas)
+                        //设置选择器
+                        .withSelector(new V1LabelSelectorBuilder()
+                                .withMatchLabels(selectLabels)
+                                .build())
+                        //设置docker镜像模板
+                        .withTemplate(new V1PodTemplateSpecBuilder()
+                                .withMetadata(new V1ObjectMetaBuilder()
+                                        .withLabels(selectLabels)
+                                        .build())
+                                .withSpec(new V1PodSpecBuilder()
+                                        .withContainers(new V1ContainerBuilder()
+                                                .withArgs(deployAppVo.getArgs())
+                                                .withName(appCode)//设置docker名
+                                                .withImage(imageName)//设置 docker镜像名
+                                                //设置环境参数
+                                                .withEnv(envVarList)
+                                                //镜像本地拉去策略
+                                                .withImagePullPolicy(KubernetesDeployConfig.IMAGE_PULL_POLICY)
+                                                //命令
+                                                .withCommand(deployAppVo.getCommands())
+                                                //增加挂载路径
+                                                .withVolumeMounts(v1VolumeMounts)
+                                                .build()).
+                                                withImagePullSecrets(imagePullSecret)
+                                        //指定挂载路径
+                                        .withVolumes(deployAppVo.getV1Volumes())
+                                        .build())
+                                .build())
+                        .build())
+                .build(); // V1Deployment
+        String pretty = null; // 是否会漂亮输出
+        String dryRun = null; //
+        String fieldManager = null; //
+
+        log.info(Yaml.dump(body));
+        V1Deployment result = kubernetesApiClient.getAppsV1Api().createNamespacedDeployment(nameSpace, body, pretty, dryRun, fieldManager);//调用createNamespacedDeployment方法创建应用部署
+        return "";
+    }
+
+    @Override
+    public String createDeploymentAndDeploy(KubernetesApiClient kubernetesApiClient,String nameSpace,String appCode, String imageName,int replicas,boolean isTest,DeployAppVo deployAppVo) throws Exception {
         //lm 2023-05-30 添加域名服务
         QueryCriterion queryCriterion = new QueryCriterion();
         queryCriterion.addParam(new QueryHibernatePlaceholderParam("flgDeleted", 0,null, QueryOperSymbolEnum.eq));
@@ -227,11 +398,18 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
         }
         V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
 //        Map<String, Quantity> limits = new HashMap<>();
-        imagePullSecret.setName(secretName);
+
+        if (StringUtils.isEmpty(deployAppVo.getSecretName())){
+            deployAppVo.setSecretName("");
+        }
+
+        imagePullSecret.setName(deployAppVo.getSecretName());
         V1PodSpecBuilder v1PodSpecBuilder = new V1PodSpecBuilder();
         if (StringUtils.isNotBlank(deployAppVo.getNodeName())){
             v1PodSpecBuilder.withNodeName(deployAppVo.getNodeName());
         }
+
+
 
         //端口暴露服务的对应的是/ Service.Spec.Selector下的值
         Map<String,String> selectLabels = new HashMap<>();
@@ -246,6 +424,8 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
                         .withLabels(selectLabels)
                         .build())
                 .withSpec(new V1DeploymentSpecBuilder()
+                        //将ReplicaSet设置成0个 代表只需要保留最新的一个 revisionHistoryLimit设置为 0 会完全禁用版本历史记录。所有旧的 ReplicaSet（无论是否正在运行 Pod）都会被立即删除，只保留当前活跃的 ReplicaSet
+                                .withRevisionHistoryLimit(0)
                         //设置默认副本数
                         .withReplicas(replicas)
                         //设置选择器
@@ -306,6 +486,81 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
         String fieldManager = null; //
         log.info("创建应用服务配置");
         log.info(Yaml.dump(body));
+        V1Deployment result = kubernetesApiClient.getAppsV1Api().createNamespacedDeployment(nameSpace, body, pretty, dryRun, fieldManager);//调用createNamespacedDeployment方法创建应用部署
+        return result.toString();
+    }
+
+    @Override
+    public String createLimitDeploymentAndDeploy(KubernetesApiClient kubernetesApiClient,String nameSpace,String appCode, String imageName,int replicas,boolean isTest,String secretName) throws ApiException, ParamErrorException {
+        //应用名字禁止出现下划线
+        if(appCode.contains("_")){
+            throw new ParamErrorException("应用编码禁止出现下划线");
+        }
+        if(StringHandlerUtil.isContainChinese(appCode)){
+            throw new ParamErrorException("应用编码禁止出现中文");
+        }
+        //20230118 增加应用挂载
+        String volumeName = KubernetesYamlConfig.getVolumName();
+        V1VolumeMount v1VolumeMount = new V1VolumeMount();
+        v1VolumeMount.setMountPath(KubernetesYamlConfig.getVolumePath());
+        v1VolumeMount.setName(volumeName);
+        ArrayList<V1VolumeMount> v1VolumeMounts = new ArrayList<>();
+        v1VolumeMounts.add(v1VolumeMount);
+        //宿主机存储路径
+        //234：/home/kube_filestore
+        //239：/data/kube_filestore
+        //240：/home/kube_filestore
+        String storePath = "/home/kube_filestore/outdir/"+appCode;
+        if(imageName.contains("none")){
+            throw new ApiException("错误的镜像名字");
+        }
+        V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
+        imagePullSecret.setName(secretName);
+        //端口暴露服务的对应的是/ Service.Spec.Selector下的值
+        Map<String,String> selectLabels = new HashMap<>();
+        selectLabels.put("app",appCode);
+        selectLabels.put("logkey",nameSpace+"-"+appCode);
+        V1Deployment body = new V1DeploymentBuilder()
+                .withApiVersion("apps/v1")
+                .withKind(KubernetesConstants.K8S_DEPLOY_DEPLOYMENT_NAME)
+                .withMetadata(new V1ObjectMetaBuilder()
+                        .withName(appCode)
+                        .withNamespace(nameSpace)
+                        .withLabels(selectLabels)
+                        .build())
+                .withSpec(new V1DeploymentSpecBuilder()
+                        //设置默认副本数
+                        .withReplicas(replicas)
+                        //设置选择器
+                        .withSelector(new V1LabelSelectorBuilder()
+                                .withMatchLabels(selectLabels)
+                                .build())
+                        //设置docker镜像模板
+                        .withTemplate(new V1PodTemplateSpecBuilder()
+                                .withMetadata(new V1ObjectMetaBuilder()
+                                        .withLabels(selectLabels)
+                                        .build())
+                                .withSpec(new V1PodSpecBuilder()
+                                        .withContainers(new V1ContainerBuilder()
+                                                .withName(appCode)//设置docker名
+                                                .withImage(imageName)//设置 docker镜像名
+                                                .withImagePullPolicy("Always")//镜像本地拉去策略
+                                                //.withCommand("/bin/bash","-ce","tail -f /dev/null")//命令
+                                                //增加挂载路径
+                                                .withVolumeMounts(v1VolumeMounts)
+                                                .build()).
+                                                withImagePullSecrets(imagePullSecret)
+                                        .withVolumes(new V1Volume().hostPath(new V1HostPathVolumeSource().type("DirectoryOrCreate").path(storePath)).name(volumeName))
+                                        .build())
+                                .build())
+                        .build())
+                .build(); // V1Deployment
+        if(isTest){
+            return Yaml.dump(body);
+        }
+        String pretty = null; // 是否会漂亮输出
+        String dryRun = null; //
+        String fieldManager = null; //
         V1Deployment result = kubernetesApiClient.getAppsV1Api().createNamespacedDeployment(nameSpace, body, pretty, dryRun, fieldManager);//调用createNamespacedDeployment方法创建应用部署
         return result.toString();
     }
@@ -376,16 +631,19 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
             waitCheckS = checkInterval;
             log.info("检查间隔设置为"+checkInterval);
         }
+        if (waitCheckS == 0){
+            throw new DataValidException("刷新间隔无效.不允许为0");
+        }
         //查询部署状态
         V1PodList pods = null;
         pods = getPodByDeployment(kubernetesApiClient,nameSpace, deploymentName);
         // 等待多实例变1的等待次数
         int moreInstanceCount = 0;
-        while (moreInstanceCount<KubernetesConstants.DEFAULT_INSTACE_WAIT_COUNT){
+        while (moreInstanceCount<KubernetesConstants.DEFAULT_INSTACE_WAIT_COUNT || pods.getItems().size() == 0){
             if (pods.getItems().size() == 1){
                 log.info("应用"+deploymentName+"实例变1成功!序号:"+moreInstanceCount);
                 break;
-        }
+            }
             log.info("应用"+deploymentName+"获取到多个实例 等待实例变1,序号:"+moreInstanceCount);
             try {
                 TimeUnit.SECONDS.sleep(waitCheckS);
@@ -395,6 +653,10 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
             //未变1 刷新等待
             moreInstanceCount++;
             pods = getPodByDeployment(kubernetesApiClient,nameSpace, deploymentName);
+            if (moreInstanceCount>=KubernetesConstants.DEFAULT_INSTACE_WAIT_COUNT){
+                log.info("当前次数"+moreInstanceCount+",最大次数"+KubernetesConstants.DEFAULT_INSTACE_WAIT_COUNT+",刷新间隔"+waitCheckS);
+                throw new DataExecFailException("等待服务器执行超时.请联系管理员!");
+            }
         }
         //等待应用刷新有效的状态数据
         List<V1ContainerStatus> v1ContainerStatuses = waitK8sAppStatus(kubernetesApiClient, nameSpace, deploymentName,waitCheckS);
@@ -418,6 +680,10 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
             String errReason = status1.getState().getWaiting().getReason();
             if (StringHandlerUtil.isNotBlank(errMsg)
                     && StringHandlerUtil.isNotBlank(errReason)) {
+                if (MaasConst.K8S_POD_ERRIMAGEPULL.equals(errReason) || MaasConst.K8S_POD_IMAGEPULLBACKOFF.equals(errReason)){
+                    log.info(errReason);
+                    return getFailResult("验证镜像仓库信息异常!初始化配置失败!请检查镜像仓库的地址、项目名、镜像、账号密码/token是否有效可用");
+                }
                 return getFailResult(TaskConst.IMAGEERROR + "2.应用启动异常!\r\n错误信息:\r\n" + errReason + "\r\n" + errMsg);
             }
         }
@@ -434,12 +700,23 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
                     break;
                 }
                 status = pods.getItems().get(0).getStatus().getContainerStatuses().get(0);
+                if (status!=null && status.getState()!=null && status.getState().getWaiting()!=null){
+                    if (MaasConst.K8S_POD_ERRIMAGEPULL.equals(status.getState().getWaiting().getReason())
+                            || MaasConst.K8S_POD_IMAGEPULLBACKOFF.equals(status.getState().getWaiting().getReason())
+                            || MaasConst.K8S_POD_INVALIDIMAGENAME.equals(status.getState().getWaiting().getReason())){
+                        log.info(status.getState().getWaiting().getReason());
+                        return getFailResult("验证镜像仓库信息异常!初始化配置失败!请检查镜像仓库的地址、项目名、镜像、账号密码/token是否有效可用");
+                    }
+                }
                 //在上面刷新的时候 可能已经变运行了
                 if (status.getReady()) {
+                    //增加双重认证
+                    pods = getPodByDeployment(kubernetesApiClient,nameSpace, deploymentName);
+
                     log.info("验证" + deploymentName+ "成功!");
                     return null;
                 }
-                log.info("应用"+deploymentName+"依然处于读取的状态");
+                log.info("应用"+deploymentName+"依然处于读取的状态 状态名:"+status.getState().getWaiting().getReason());
                 try {
                     TimeUnit.SECONDS.sleep(waitCheckS);
                 } catch (InterruptedException e) {
@@ -455,12 +732,19 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
             V1ContainerStateWaiting containerCreateWaiting = status.getState().getWaiting();
             //等待应用创建 判断是否在启动中
             log.info("开始检查应用启动状态!");
+            if (status.getState()!=null && status.getState().getWaiting()!=null && StringUtils.isNotBlank(status.getState().getWaiting().getReason())){
+                String errReason = status.getState().getWaiting().getReason();
+                //进入等待状态 代表有可能遇到问题了 判断报错
+                if (MaasConst.K8S_POD_ERRIMAGEPULL.equals(errReason) || MaasConst.K8S_POD_IMAGEPULLBACKOFF.equals(errReason) || MaasConst.K8S_POD_INVALIDIMAGENAME.equals(status.getState().getWaiting().getReason())){
+                    return getFailResult("验证镜像仓库信息异常!初始化配置失败!请检查镜像仓库的地址、项目名、账号密码/token是否有效可用");
+                }
+            }
             //如果是应用创建中 则需要一直等待
             int waitCreatingCount = 0;
             while (Objects.nonNull(containerCreateWaiting) && "ContainerCreating".equals(containerCreateWaiting.getReason())){
                 log.info("应用"+deploymentName+"创建中....等待");
                 try {
-                    TimeUnit.SECONDS.sleep(KubernetesConstants.DEFAULT_CREATING_WAIT_SECONDS);
+                    TimeUnit.SECONDS.sleep(checkInterval);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -550,6 +834,13 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
                 if(StringUtils.isEmpty(failLog)){
                     failLog="";
                 }
+                if (status.getLastState()!= null && status.getLastState().getTerminated()!=null){
+                    String lastMsg = status.getLastState().getTerminated().getMessage();
+                    log.error("启动服务失败:"+lastMsg);
+                    if (StringUtils.isNotBlank(lastMsg) && lastMsg.contains("nvidia-container-cli: initialization error")){
+                        return getFailResult("您的K8S服务器Cuda环境异常.请确保Cuda驱动相关正常");
+                    }
+                }
                 return getFailResult("启动失败!"+waitReason+"\r\n"+ TaskConst.IMAGEERROR + "\r\n2.应用启动异常!\r\n应用日志信息:\r\n" + failLog);
             }
             //刷新状态
@@ -578,6 +869,20 @@ public class KubernetesBasePodHandlerImpl implements KubernetesPodHandler {
             log.info("验证" + deploymentName+ "成功!");
         }
         return null;
+    }
+
+    @Override
+    public String updateDeployment(KubernetesApiClient kubernetesApiClient, String nameSpace, V1Deployment deployment) throws ApiException {
+        // 执行更新
+        V1Deployment updatedDeployment = kubernetesApiClient.getAppsV1Api().replaceNamespacedDeployment(
+                deployment.getMetadata().getName(),
+                nameSpace,
+                deployment,
+                null,
+                null,
+                null
+        );
+        return Yaml.dump(updatedDeployment);
     }
 
     /**

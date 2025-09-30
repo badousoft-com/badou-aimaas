@@ -1,5 +1,11 @@
 package com.badou.project.maas.tuningmodeln.service.impl;
 
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -7,7 +13,6 @@ import com.badou.brms.attach.AttachConfig;
 import com.badou.brms.attach.AttachFactory;
 import com.badou.brms.attach.model.Attach;
 import com.badou.brms.attach.service.IAttachService;
-import com.badou.brms.base.support.spring.BaseSpringService;
 import com.badou.brms.base.support.struts.JsonReturnBean;
 import com.badou.brms.dboperation.query.*;
 import com.badou.brms.dboperation.query.support.QueryHibernatePlaceholderParam;
@@ -21,9 +26,11 @@ import com.badou.project.GlobalConsts;
 import com.badou.project.common.webparams.util.DateUtil;
 import com.badou.project.common.webparams.util.JsonResultUtil;
 import com.badou.project.exception.DataEmptyException;
+import com.badou.project.exception.DataErrorException;
+import com.badou.project.exception.DataExecFailException;
 import com.badou.project.exception.DataValidException;
-import com.badou.project.exception.ExecFailException;
 import com.badou.project.gpucalc.BaseGpuCalcHandler;
+import com.badou.project.gpucalc.GpuCalcCardModel;
 import com.badou.project.gpucalc.GpuCalcFactory;
 import com.badou.project.gpucalc.impl.VllmGpuHandler;
 import com.badou.project.gpucalc.model.MultipleServersConfig;
@@ -32,6 +39,7 @@ import com.badou.project.kubernetes.config.KubernetesConfig;
 import com.badou.project.kubernetes.handler.KubernetesNameSpaceHandler;
 import com.badou.project.kubernetes.handler.KubernetesPodHandler;
 import com.badou.project.kubernetes.handler.KubernetesServiceHandler;
+import com.badou.project.kubernetes.util.KubernetesConfigUtil;
 import com.badou.project.kubernetes.util.StringHandlerUtil;
 import com.badou.project.kubernetes.util.ZipUtils;
 import com.badou.project.kubernetes.vo.DeployAppVo;
@@ -50,6 +58,8 @@ import com.badou.project.maas.modelwarehouse.service.IModelWarehouseService;
 import com.badou.project.maas.modelwarehouse.service.IWareHouseVllmParamService;
 import com.badou.project.maas.planlink.model.PlanLinkEntity;
 import com.badou.project.maas.planlink.service.IPlanLinkService;
+import com.badou.project.maas.registryaddress.model.RegistryAddressEntity;
+import com.badou.project.maas.registryaddress.service.IRegistryAddressService;
 import com.badou.project.maas.trainfile.model.TrainFileEntity;
 import com.badou.project.maas.trainfile.model.TrainMultiDetailFileEntity;
 import com.badou.project.maas.trainfile.model.TrainMultiFileEntity;
@@ -62,10 +72,7 @@ import com.badou.project.maas.trainfiledialoguedetail.model.TrainFileDialoguedet
 import com.badou.project.maas.trainfiledialoguedetail.service.ITrainFileDialoguedetailService;
 import com.badou.project.maas.trainplan.model.TrainPlanEntity;
 import com.badou.project.maas.trainplan.service.ITrainPlanService;
-import com.badou.project.maas.tuningmodeln.dao.ITuningModelnDAO;
 import com.badou.project.maas.tuningmodeln.model.TrainPlanlogstatus;
-import com.badou.project.maas.tuningmodeln.model.TuningModelnEntity;
-import com.badou.project.maas.tuningmodeln.service.ITuningModelnService;
 import com.badou.project.maas.tuningprogramn.service.ITuningProgramnService;
 import com.badou.project.maas.tuningprogramqueue.service.ITuningProgramQueueService;
 import com.badou.project.mq.ModelPlanTaskMqReceiver;
@@ -76,21 +83,17 @@ import com.badou.tools.common.util.SpringHelper;
 import com.badou.tools.common.util.StringUtils;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.*;
-import io.kubernetes.client.util.Yaml;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.badou.brms.base.support.spring.BaseSpringService;
+import com.badou.project.maas.tuningmodeln.dao.ITuningModelnDAO;
+import com.badou.project.maas.tuningmodeln.model.TuningModelnEntity;
+import com.badou.project.maas.tuningmodeln.service.ITuningModelnService;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
-
-import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.lang.Character.toUpperCase;
 
@@ -110,6 +113,8 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
     private ITuningModelnDAO tuningModelnDAO;
     @Autowired
     private KubernetesPodHandler kubernetesPodHandler;
+    @Autowired
+    private IRegistryAddressService registryAddressService;
     @Autowired
     private ITuningProgramnService tuningProgramnService;
     @Autowired
@@ -146,6 +151,8 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
     private IModelAppVllmParamService modelAppVllmParamService;
     private static final Map<String, String> serverIdMap = new HashMap<>();
     @Autowired
+    private BaseGpuCalcHandler baseGpuCalcHandler;
+    @Autowired
     private IModelSyncTaskService modelSyncTaskService;
 
     public TuningModelnServiceImpl() throws Exception {
@@ -159,6 +166,9 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
 
     @Override
     public JsonReturnBean coverTunModel(TuningModelnEntity tuningModelnEntity, Integer type, String pubVersion, String pubMsg) {
+        if (!(MaasConst.DOPLAN_SUCCESS_STATUS == tuningModelnEntity.getDoStatus())){
+            return JsonResultUtil.errorMsg("只有微调成功的任务才允许上下架模型");
+        }
         QueryCriterion queryCriterion = new QueryCriterion();
         queryCriterion.addParam(new QueryHibernatePlaceholderParam("tun_model_id", tuningModelnEntity.getId(), null, QueryOperSymbolEnum.eq));
         queryCriterion.addParam(new QueryHibernatePlaceholderParam("flg_deleted", 0, null, QueryOperSymbolEnum.eq));
@@ -176,7 +186,9 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
             //生成微调成功的路径
             ModelWarehouseEntity newWarehouseEntity = new ModelWarehouseEntity();
             BeanUtils.copyProperties(oldModel, newWarehouseEntity, "createTime", "id", "updateTime", "creator", "updator");
-            newWarehouseEntity.setPath(MaasConst.buildModelOutPath(tuningModelnEntity));
+            newWarehouseEntity.setPath(MaasConst.buildMergedModelOutPath(tuningModelnEntity));
+            newWarehouseEntity.setName("");
+            newWarehouseEntity.setDescription("经过微调的模型.版本:"+pubVersion+",备注:"+pubMsg);
             newWarehouseEntity.setCreateTime(new Date());
             newWarehouseEntity.setCreator(LogonCertificateHolder.getLogonCertificate().getUserId());
             newWarehouseEntity.setCreatorName(LogonCertificateHolder.getLogonCertificate().getUserName());
@@ -184,16 +196,20 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
             newWarehouseEntity.setUpdator(LogonCertificateHolder.getLogonCertificate().getUserId());
             newWarehouseEntity.setUpdatorName(LogonCertificateHolder.getLogonCertificate().getUserName());
             newWarehouseEntity.setParentId(oldModel.getId());
-            newWarehouseEntity.setDeployNum(0);
+            newWarehouseEntity.setDeployNum(1);
             newWarehouseEntity.setSource(MaasConst.MODEL_SOURCE_TUN);
             newWarehouseEntity.setTunModelId(tuningModelnEntity.getId());
             newWarehouseEntity.setPubVersion(pubVersion);
             newWarehouseEntity.setPubMsg(pubMsg);
             newWarehouseEntity.setFlgDeleted(0);
             newWarehouseEntity.setBaseModelId(tuningModelnEntity.getBaseModelId());
+            newWarehouseEntity.setType(MaasConst.MODEL_TYPE_OTHER);
+            newWarehouseEntity.setCustomGpuCard(null);
+            newWarehouseEntity.setCustomGpuCardName(null);
             tuningModelnEntity.setShelvesStatus(1);
             updateImmediately(tuningModelnEntity);
             modelWarehouseService.create(newWarehouseEntity);
+            return JsonResultUtil.success(newWarehouseEntity.getId());
         } else if (type == 0) {
             if (modelWarehouseEntities.size() == 0) {
                 return JsonResultUtil.errorMsg("未上架!请先上架");
@@ -299,7 +315,7 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
         DeployAppVo deployAppVo = new DeployAppVo(kubernetesApiClient, MaasConst.SPACE_TENSORBOARD, appCode, paramsDic.getValue(), 1, KubernetesConfig.getImagePullSecrets()
                 , null, v1VolumeMounts, new V1Volume[]{new V1Volume().name(workDir.getCode()).hostPath(new V1HostPathVolumeSource().type("").path(path))}, null);
         kubernetesPodHandler.createPodByParams(paramsDic.getValue(), kubernetesApiClient, 1, nameSpace, appCode, deployAppVo);
-        String result = kubernetesPodHandler.checkPodRunning(kubernetesApiClient, nameSpace, appCode, 0);
+        String result = kubernetesPodHandler.checkPodRunning(kubernetesApiClient, nameSpace, appCode, 3);
         if (StringUtils.isNotBlank(result)) {
             try {
                 kubernetesPodHandler.deleteOnePod(kubernetesApiClient, nameSpace, appCode);
@@ -488,7 +504,7 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
     @Override
     public TuningModelnEntity getPodLogsUnUpdate(KubernetesApiClient kubernetesClient, String nameSpace, String podName, TuningModelnEntity tuningModelnEntity, boolean allFlg) throws IOException, ApiException {
         //应用成功
-        if (MaasConst.DOPLAN_SUCCESS_STATUS == tuningModelnEntity.getDoStatus() && GlobalConsts.ONE.equals(tuningModelnEntity.getAutoStartFlg())) {
+        if (MaasConst.DOPLAN_SUCCESS_STATUS == tuningModelnEntity.getDoStatus() && tuningModelnEntity.getAutoStartFlg() == GlobalConsts.ONE) {
             String msg = "模型微调成功!模型自启成功!";
             tuningModelnEntity.setPlanMsg(msg + "\n" + tuningModelnEntity.getPlanMsg() + "\n" + msg);
             return tuningModelnEntity;
@@ -543,9 +559,13 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
 
         V1Pod onePod = kubernetesPodHandler.getOnePod(kubernetesClient, podName, nameSpace);
         if (onePod != null) {
-            //获取全部日志
-            String logs = kubernetesPodHandler.readPodAllLog(kubernetesClient, nameSpace, podName, 999999);
-            tuningModelnEntity.setPlanMsg(logs.replace("\u001B[A", ""));
+           try {
+               //获取全部日志
+               String logs = kubernetesPodHandler.readPodAllLog(kubernetesClient, nameSpace, podName, 999999);
+               tuningModelnEntity.setPlanMsg(logs.replace("\u001B[A", ""));
+           }catch (Exception e){
+               log.warn("POD存在 但获取日志异常");
+           }
         }
         return tuningModelnEntity;
     }
@@ -714,7 +734,7 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
                                 String toPath = createPath + "/files/"+timestamp+".zip";
                                 JSONObject jsonObject = fileControllerService.downFile(tuningModelnEntity,zipAttach.getId(),toPath, kubernetesApiClient, fileControllerService.getOauthUrl());
                                 if (MaasConst.DOPLAN_FAIL_STATUS == tuningModelnEntity.getDoStatus()) {
-                                    throw new ExecFailException("下载训练集失败.下载命令错误或者文件下载服务状态异常!");
+                                    throw new DataExecFailException("下载训练集失败.下载命令错误或者文件下载服务状态异常!");
                                 }
 
                                 log.info("3.调用容器下载完成");
@@ -816,11 +836,15 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
 
     @Override
     public boolean startmodel(ModelWarehouseEntity modelWarehouseEntity, ModelAppEntity modelAppEntity) throws Exception {
+        RegistryAddressEntity defaultRegistryAddress = registryAddressService.getDefaultRegistryAddress();
+        if (defaultRegistryAddress == null){
+            throw new DataValidException("未配置默认镜像仓库!请联系管理员!");
+        }
         //20250607 lm 增加同步任务的判断
-//        String checkValidTask = modelSyncTaskService.checkValidTask(modelWarehouseEntity);
-//        if (StringUtils.isNotBlank(checkValidTask)){
-//            throw new DataValidException(checkValidTask);
-//        }
+        String checkValidTask = modelSyncTaskService.checkValidTask(modelWarehouseEntity);
+        if (StringUtils.isNotBlank(checkValidTask)){
+            throw new DataValidException(checkValidTask);
+        }
         //自定义显卡模式不判断
         if (StringUtils.isEmpty(modelWarehouseEntity.getCustomGpuCardName())){
             //单机多机判断
@@ -837,6 +861,11 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
                 throw new DataValidException("目前还未支持多机多卡模式");
             }
         }
+        RegistryAddressEntity registryAddressEntity = registryAddressService.getDefaultRegistryAddress();
+        if (registryAddressEntity == null){
+            throw new DataErrorException("未配置默认镜像仓库!请联系管理员!");
+        }
+        modelWarehouseService.calcGpuCache(modelWarehouseEntity);
 
         String workDir = "/home/aimodel/out/chatglm3/computer10/tool_alpaca_pt-PTV2_0000001-1718435440061";
 
@@ -891,14 +920,16 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
         KubernetesApiClient kubernetesApiClient = FileControllerService.getCustomClient(modelAppEntity.getServerId());
         List<V1EnvVar> varsList = new ArrayList<>();
 
+        boolean p100Flag = false;
         boolean useDefaultFlag = false;
         if (modelParams.getItems().size() == 0 || GlobalConsts.ZERO.equals(modelWarehouseEntity.getDeployFrame())) {
             //全部人固定拿qwenvl的
             modelParams = DictionaryLib.getDictionaryByCode(MaasConst.VLLM_PARAMS_DIC);
             //如果是p100服务器必须要换镜像
-            if (FileControllerService.getCacheK8sClient(modelAppEntity.getServerId()).getServer().getRemark().contains("p100")){
-                modelParams.setValue(modelParams.getValue()+".pascal");
-            }
+//            if (FileControllerService.getCacheK8sClient(modelAppEntity.getServerId()).getServer().getRemark().contains("p100")){
+//                modelParams.setValue(modelParams.getValue()+".pascal");
+//                p100Flag = true;
+//            }
             useDefaultFlag = true;
 //            log.error(MaasConst.TRAIN_REGISTRY_MODEL + modelAppEntity.getModelName()+"的启动参数字典不存在!");
 //            throw new DataEmptyException(modelAppEntity.getModelName()+"的启动参数字典不存在!请联系管理员!");
@@ -987,8 +1018,15 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
                 }
             }
         }
+        String imageTag = DictionaryLib.getItemCodeByItemValue(MaasConst.DIC_VLLM_VERSION, modelWarehouseEntity.getFrameVersion());
+        if (StringUtils.isEmpty(imageTag)){
+            kubernetesPodHandler.deleteDeployment(kubernetesApiClient, nameSpace, appCode);
+            throw new DataValidException("未识别的镜像信息!请联系管理员!");
+        }
+
         //为该任务选择实际的执行显卡
-        List<MultipleServersConfig> taskCard = modelWarehouseEntity.coverToServerCard();
+        List<MultipleServersConfig> taskCard = baseGpuCalcHandler.coverToServerCard(modelWarehouseEntity.getServerId(),
+                modelWarehouseEntity.getStartNeedGpum(),modelWarehouseEntity.getCustomGpuCardName(),modelWarehouseEntity.getCustomGpuCard());
 
         if (taskCard == null || taskCard.size() == 0){
             //为本次任务分配显卡
@@ -1000,17 +1038,32 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
             }
             taskCard = appCardMsg.getMultipleServersConfigs();
         }
+        for (MultipleServersConfig multipleServersConfig : taskCard) {
+            Map<Integer, GpuCalcCardModel> gpuCalcCardModels = multipleServersConfig.getGpuCalcCardModels();
+            for (Integer key:gpuCalcCardModels.keySet()){
+                GpuCalcCardModel gpuCalcCardModel = gpuCalcCardModels.get(key);
+                if (gpuCalcCardModel.getName().contains("P100")){
+                    p100Flag = true;
+                    log.info("当前模型部署启用P100显卡兼容模式");
+                    if (!imageTag.contains("0.7.3")){
+                        throw new DataValidException("P100显卡仅支持VLLM 0.7.3版本");
+                    }
+                }
+            }
+        }
+
         //执行VLLM GPU处理器
         BaseGpuCalcHandler gpuCalcHandler = new VllmGpuHandler();
         gpuCalcHandler.exec(modelWarehouseEntity,envVarList,taskCard,params);
         modelAppEntity.setExecGpuCard(JSONArray.toJSONString(taskCard));
         //当计算出来本次任务需要的显卡的时候 则判断下任务服务器是否有这个模型
         for (MultipleServersConfig multipleServersConfig : taskCard) {
-            String mainLocalPath = multipleServersConfig.getK8sServerConfEntity().getMainLocalPath();
-            String pathValue = mainLocalPath!=null?path.replace("/home",multipleServersConfig.getK8sServerConfEntity().getMainLocalPath()):path;
-            JSONObject jsonObject = fileControllerService.execModelCommand(multipleServersConfig.getK8sServerConfEntity(), new String[]{"ls",pathValue });
+//            String mainLocalPath = multipleServersConfig.getK8sServerConfEntity().getMainLocalPath();
+//            String pathValue = mainLocalPath!=null?path.replace("/home",multipleServersConfig.getK8sServerConfEntity().getMainLocalPath()):path;
+//            JSONObject jsonObject = fileControllerService.execModelCommand(multipleServersConfig.getK8sServerConfEntity(), new String[]{"ls",pathValue });
+            JSONObject jsonObject = fileControllerService.execModelCommand(multipleServersConfig.getK8sServerConfEntity(), new String[]{"ls",path});
             if (jsonObject.getString("msg").contains("cannot access")){
-                throw new DataValidException(multipleServersConfig.getK8sServerConfEntity().getCode()+"不存在该模型!请联系管理员!");
+                throw new DataValidException("服务器"+multipleServersConfig.getK8sServerConfEntity().getRemark()+"不存在"+modelWarehouseEntity.getModelName()+"模型!请联系管理员或修正服务器的模型扫描目录");
             }
         }
 
@@ -1021,9 +1074,14 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
         deployAppVo.setV1Volumes(v1Volumes.toArray(new V1Volume[]{}));
         deployAppVo.setV1VolumeMounts(v1VolumeMounts);
         deployAppVo.setAppCode(modelAppEntity.getId());
-        deployAppVo.setImageName(image.replace("0.7.3",modelWarehouseEntity.getFrameVersion()));
+
+        if (p100Flag){
+            imageTag+=".pascal";
+        }
+//        deployAppVo.setImageName(image+":v0.7.6");
+        deployAppVo.setImageName(KubernetesConfigUtil.buildImageName(registryAddressEntity,image,imageTag));
         deployAppVo.setNameSpace(MaasConst.MODEL_APP_NSAPCE);
-        deployAppVo.setSecretName("badouregistrykey");
+        deployAppVo.setSecretName(defaultRegistryAddress.getKeyName());
         deployAppVo.setEnvVarList(envVarList);
         deployAppVo.setKubernetesApiClient(kubernetesApiClient);
         deployAppVo.setNodeName(FileControllerService.getCacheK8sClient(modelAppEntity.getServerId()).getServer().getCode());
@@ -1045,7 +1103,7 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
             }
         }
         //处理命名空间
-        kubernetesNameSpaceHandler.createNameSpace(kubernetesApiClient, nameSpace);
+        kubernetesNameSpaceHandler.createNameSpace(kubernetesApiClient, nameSpace,null,defaultRegistryAddress);
 
         //检查是否运行过!
         V1PodList pod = kubernetesPodHandler.getPodByDeployment(kubernetesApiClient, nameSpace, appCode);
@@ -1057,76 +1115,32 @@ public class TuningModelnServiceImpl extends BaseSpringService<TuningModelnEntit
             setFail(modelAppEntity, "应用标识主键长度不允许>63");
             return false;
         }
+        deployAppVo.setSecretName(defaultRegistryAddress.getKeyName());
         String deploymentAndDeploy = kubernetesPodHandler.createDeploymentAndDeploy(
-                kubernetesApiClient, nameSpace, appCode, deployAppVo.getImageName(), 1, false,
-                KubernetesConfig.getImagePullSecrets(), deployAppVo);
+                kubernetesApiClient, nameSpace, appCode, deployAppVo.getImageName(), 1, false,deployAppVo);
         //等待该deploy生成内容
-        V1PodList podByDeployment = kubernetesPodHandler.getPodByDeployment(kubernetesApiClient, nameSpace, appCode);
+//        V1PodList podByDeployment = kubernetesPodHandler.getPodByDeployment(kubernetesApiClient, nameSpace, appCode);
 
+        String startResult = kubernetesPodHandler.checkPodRunning(kubernetesApiClient, nameSpace, appCode,1);
+        if (StringUtils.isNotBlank(startResult)){
+            kubernetesPodHandler.deleteDeployment(kubernetesApiClient, nameSpace, appCode);
+            throw new DataExecFailException(startResult);
+        }
 
-        //最多尝试10次
-        int retryCount = 3000;
-        int nowCount = 0;
-//        modelAppService.checkAppStarted(modelAppEntity,MaasConst.TIMEOUT_AIMODEL_START_WAIT);
-        while (true) {
-            if (nowCount >= retryCount) {
-                kubernetesPodHandler.deleteDeployment(kubernetesApiClient, nameSpace, appCode);
-                setFail(modelAppEntity, "创建服务超时!1分钟请联系管理员!");
-                return false;
-            }
-            V1Pod readPod = null;
-            if (podByDeployment.getItems().size() >-1){
-                podByDeployment = kubernetesPodHandler.getPodByDeployment(kubernetesApiClient, nameSpace, appCode);
-                if (podByDeployment.getItems().size()>0){
-                    readPod = podByDeployment.getItems().get(0);
-                    if (readPod.getStatus() == null){
-                        continue;
-                    }
-                    V1PodStatus status = readPod.getStatus();
-                    String phase = status.getPhase();
-                    nowCount++;
-                    if ("Pending".equals(phase)) {
-                        log.info("POD Pending...");
-                        podByDeployment = kubernetesPodHandler.getPodByDeployment(kubernetesApiClient, nameSpace, appCode);
-                        TimeUnit.SECONDS.sleep(2);
-                        continue;
-                    }
-                    if ("Error".equals(phase)) {
-                        String nowLog = kubernetesPodHandler.readPodAllLog(kubernetesApiClient, nameSpace, readPod.getMetadata().getName(), 999999);
-                        setFail(modelAppEntity, nowLog);
-                        return false;
-                    }
-                    break;
-                }else {
-                    nowCount++;
-                    TimeUnit.SECONDS.sleep(2);
-                    log.info("继续确认状态");
-                    continue;
-                }
-            }
-        }
-        if (podByDeployment.getItems().isEmpty()) {
-            setFail(modelAppEntity, "应用失败!请联系管理员!");
-            return false;
-        }
-        V1Pod readPod = podByDeployment.getItems().get(0);
-        modelAppEntity.setBuildPod(Yaml.dump(readPod));
-        if (Objects.isNull(readPod)) {
-            modelAppEntity.setMsg("无法创建任务!请联系管理员");
-            modelAppEntity.setStatus(MaasConst.DOPLAN_FAIL_STATUS);
-            return false;
-        }
-        log.info("创建状态:" + readPod.getStatus());
         int currentPort = modelAppEntity.getPort()!=null?modelAppEntity.getPort():ik8sPortService.calcNextPort();
 
         modelAppEntity.setPort(currentPort);
         modelAppEntity.setStatus(MaasConst.DOPLAN_SUCCESS_STATUS);
         try {
+
             //任务启动 创建service
             String tcp = kubernetesServiceHandler.createServiceAndDeploy(kubernetesApiClient, nameSpace, appCode, appCode, "TCP", 8000, 8000,
                     currentPort, false);
             modelAppEntity.setBuildSvc(tcp);
-        } catch (Exception e) {
+        } catch (ApiException e) {
+            if (e.getResponseBody().contains("provided port is already allocated")){
+                throw new DataExecFailException(currentPort+"端口已被其他模型使用.请变更其他可用端口或请先停止目标端口模型");
+            }
             e.printStackTrace();
             ik8sPortService.deleteNew(currentPort);
             kubernetesPodHandler.deleteDeployment(kubernetesApiClient, nameSpace, appCode);

@@ -4,13 +4,17 @@ import com.badou.project.exception.DataValidException;
 import com.badou.project.gpucalc.GpuCalcHandler;
 import com.badou.project.gpucalc.GpuCalcFactory;
 import com.badou.project.gpucalc.model.MultipleServersConfig;
+import com.badou.project.kubernetes.config.KubernetesConfig;
+import com.badou.project.kubernetes.util.KubernetesConfigUtil;
 import com.badou.project.kubernetes.util.StringHandlerUtil;
 import com.badou.project.maas.modelwarehouse.model.ModelWarehouseEntity;
 import com.badou.project.maas.modelwarehouse.service.IModelWarehouseService;
+import com.badou.project.maas.registryaddress.model.RegistryAddressEntity;
+import com.badou.project.maas.registryaddress.service.IRegistryAddressService;
 import com.badou.project.maas.trainplan.model.TrainPlanEntity;
 import com.badou.project.maas.trainplan.service.ITrainPlanService;
+import com.badou.project.server.model.K8sServerConfEntity;
 import com.badou.project.util.BuildCustomFileUtil;
-import com.badou.project.util.ParamInvalidUtil;
 import com.badou.tools.common.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.badou.brms.dboperation.query.QueryCriterion;
@@ -38,6 +42,7 @@ import com.badou.project.maas.tuningmodeln.service.ITuningModelnService;
 import com.badou.project.maas.tuningplanparams.model.TuningPlanParamsEntity;
 import com.badou.project.maas.tuningplanparams.service.ITuningPlanParamsService;
 import com.badou.project.maas.tuningprogramqueue.service.ITuningProgramQueueService;
+import com.badou.project.util.ParamInvalidUtil;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.*;
@@ -48,6 +53,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -82,6 +88,8 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
     private ITuningPlanParamsService tuningPlanParamsService;
     @Autowired
     private ITrainPlanService trainPlanService;
+    @Autowired
+    private IRegistryAddressService registryAddressService;
 
 
     /**
@@ -149,7 +157,7 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
                     long diffTime = (endTime - startTime) / 1000;
                     log.info("服务" + tuningModelnEntity.getCode() + "已生成训练集.花费时间" + diffTime + "S");
                     //如果是失败 则结束任务
-                    successFlg = checkFailOrSuccess(tuningModelnEntity);
+                    checkFailOrSuccess(tuningModelnEntity);
                     if (MaasConst.DOPLAN_FAIL_STATUS == tuningModelnEntity.getDoStatus()) {
                         setFailStatus(tuningModelnEntity, tuningModelnEntity.getPlanMsg(), null);
                         return;
@@ -226,20 +234,40 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
     }
 
     private boolean checkFailOrSuccess(TuningModelnEntity tuningModelnEntity) {
+        log.info("检查微调任务"+tuningModelnEntity.getId()+"状态...");
         //查询POD状态 如果是Completed 则代表任务完成
         try {
             KubernetesApiClient kubernetesApiClient = FileControllerService.getCustomClient(tuningModelnEntity.getRealServerId());
             V1Pod pod = kubernetesPodHandler.getPod(kubernetesApiClient, tuningModelnEntity.getWorkSpace(), tuningModelnEntity.getCode());
+            if (pod!=null){
+                log.info(Yaml.dump(pod));
+            }
             if (pod!=null && MaasConst.K8S_POD_SUCCEEDED.equals(pod.getStatus().getPhase())){
                 tuningModelnEntity.setPlanMsg(kubernetesPodHandler.readPodAllLog(kubernetesApiClient, tuningModelnEntity.getWorkSpace(), tuningModelnEntity.getCode(), 999999));
                 tuningModelnService.setSucccessStatus(tuningModelnEntity,"微调成功");
+                return true;
             }else if (pod!=null && MaasConst.K8S_POD_FAILED.equals(pod.getStatus().getPhase())){
                 tuningModelnEntity.setDoStatus(MaasConst.DOPLAN_FAIL_STATUS);
                 tuningModelnEntity.setPlanMsg(kubernetesPodHandler.readPodAllLog(kubernetesApiClient, tuningModelnEntity.getWorkSpace(), tuningModelnEntity.getCode(), 999999));
+                return false;
+            }else if (pod!=null && MaasConst.K8S_POD_COMPLETED.equals(pod.getStatus().getPhase())){
+                tuningModelnEntity.setPlanMsg(kubernetesPodHandler.readPodAllLog(kubernetesApiClient, tuningModelnEntity.getWorkSpace(), tuningModelnEntity.getCode(), 999999));
+                tuningModelnService.setSucccessStatus(tuningModelnEntity,"微调成功");
                 return true;
             }
         } catch (Exception e) {
             tuningModelnService.setFailStatus(tuningModelnEntity, "微调失败!未能成功加载客户端!");
+            KubernetesApiClient kubernetesApiClient = null;
+            try {
+                kubernetesApiClient = FileControllerService.getCustomClient(tuningModelnEntity.getRealServerId());
+                V1Pod readPod = kubernetesPodHandler.getPod(kubernetesApiClient, tuningModelnEntity.getWorkSpace(), tuningModelnEntity.getCode());
+                if (Objects.isNull(readPod)) {
+                    kubernetesPodHandler.deleteOnePod(kubernetesApiClient,tuningModelnEntity.getWorkSpace(),readPod.getMetadata().getName());
+                }
+            } catch (Exception ex) {
+                e.printStackTrace();
+                log.error("移除任务失败...");
+            }
             return false;
         }
 
@@ -309,6 +337,10 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
         if (StringUtils.isEmpty(tuningModelnEntity.getCreateDir())) {
             return tuningModelnService.setFailStatus(tuningModelnEntity,"错误的识别信息!请联系管理员!");
         }
+        RegistryAddressEntity defaultRegistryAddress = registryAddressService.getDefaultRegistryAddress();
+        if (defaultRegistryAddress == null){
+            throw new DataValidException("未配置默认镜像仓库!请前往资源管理->镜像仓库信息 配置");
+        }
         String modelName = tuningModelnEntity.getModelName();
         Integer tunFrame = tuningModelnEntity.getDoFrame();
         TrainPlanEntity trainPlanEntity = trainPlanService.find(tuningModelnEntity.getPlanId());
@@ -339,7 +371,9 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
             taskDic = modelDic;
             imageName = taskDic.getValue();
         }
-        if (trainPlanEntity.getPreGpucache() == 0) {
+        imageName = KubernetesConfigUtil.buildImageName(defaultRegistryAddress.getAddress(),defaultRegistryAddress.getProjectName(),
+                imageName);
+        if (StringUtils.isEmpty(trainPlanEntity.getCustomGpuCard()) && trainPlanEntity.getPreGpucache() == 0) {
             return tuningModelnService.setFailStatus(tuningModelnEntity,"该微调方案未配置对应模型框架的预估GPU显存配置!请联系管理员!");
         }
         if (modelDic.getItems().size() == 0) {
@@ -427,15 +461,37 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
         }
 
         Map<String, String> runEnvParams = new HashMap<>();
-        runEnvParams.put("newTunModel", tuningModelnEntity.getCreateDir());
-        runEnvParams.put("modelTemplate", modelTemplate);
+        //添加训练阶段
+//        runEnvParams.put("ENV_STAGE",DictionaryLib.getItemCodeByItemValue(MaasConst.DIC_PLAN_DO_WAY,tuningModelnEntity.getDoWay()+""));
+        //如果是偏好类型 获取实际的偏好类型
+        if (MaasConst.TUN_PLAN_TYPE_RL.equals(tuningModelnEntity.getDoWay())){
+            envVarList.add(new V1EnvVar().name("ENV_STAGE").value(DictionaryLib.getItemCodeByItemValue("RLHF_WAY",tuningModelnEntity.getRlhfWay()+"")));
+        }else {
+            //走普通文本训练
+            envVarList.add(new V1EnvVar().name("ENV_STAGE").value(DictionaryLib.getItemCodeByItemValue(MaasConst.DIC_PLAN_DO_WAY,tuningModelnEntity.getDoWay()+"")));
+        }
+        //如果是多模态类型 获取实际的多模态类型
+//        runEnvParams.put("newTunModel", tuningModelnEntity.getCreateDir());
+        envVarList.add(new V1EnvVar().name("ENV_FINETUNING_OUTPUT_MODEL_NAME").value(tuningModelnEntity.getCreateDir()));
+//        runEnvParams.put("modelTemplate", modelTemplate);
+        envVarList.add(new V1EnvVar().name("ENV_TEMPLATE").value(modelTemplate));
         //指定调用的训练集文件
-        runEnvParams.put("trainFile", "trainFile");
+//        runEnvParams.put("trainFile", "trainFile");
+        envVarList.add(new V1EnvVar().name("ENV_DATASET").value("trainFile"));
         QueryCriterion queryCriterion = new QueryCriterion();
         queryCriterion.addParam(new QueryHibernatePlaceholderParam("plan_id", tuningModelnEntity.getPlanId(), null, QueryOperSymbolEnum.eq));
         queryCriterion.addParam(new QueryHibernatePlaceholderParam("flgDeleted", 0, null, QueryOperSymbolEnum.eq));
         List<TuningPlanParamsEntity> tuningPlanParamsEntities = tuningPlanParamsService.find(queryCriterion);
         for (TuningPlanParamsEntity programParamsEntity : tuningPlanParamsEntities) {
+            //如果值==None则不加入训练 如果还强制加入 部分字符串类型的参数没问题 但是部分数字参数会报错
+            if ("None".equals(programParamsEntity.getValue())){
+                log.info(programParamsEntity.getCode()+"数值为None.跳过");
+                continue;
+            }
+            if (MaasConst.TUN_PLAN_TYPE_RL.equals(tuningModelnEntity.getDoWay()) && "ENV_LOAD_BEST_MODEL_AT_END".equals(programParamsEntity.getCode())){
+                log.warn("当前为偏好对齐类型.关闭寻找最佳微调效果模式(ENV_LOAD_BEST_MODEL_AT_END).暂不支持");
+                continue;
+            }
             String v = null;
             for (String key : runEnvParams.keySet()) {
                 v = ParamInvalidUtil.replaceVarValue(programParamsEntity.getValue(), key, runEnvParams.get(key));
@@ -484,12 +540,17 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
         String serverOutPut = MaasConst.buildOutPath(tuningModelnEntity);
         String serverForMatData = tuningModelnEntity.getCreatePath();
 
+
+        log.info("本次微调工作目录名称为:"+tuningModelnEntity.getCreateDir());
+
         log.info("微调任务目录信息输出 ->>> " + modelName + ",挂载容器内部模型路径" + modelPath);
         log.info("微调任务目录信息输出 ->>> " + modelName + ",挂载容器内部训练集路径" + dataPath);
         log.info("微调任务目录信息输出 ->>> " + modelName + ",挂载容器内部输出路径" + outPut);
         log.info("微调任务目录信息输出 ->>> " + modelName + ",服务器内部模型路径" + serverModelPath);
         log.info("微调任务目录信息输出 ->>> " + modelName + ",服务器内部输出路径" + serverOutPut);
         log.info("微调任务目录信息输出 ->>> " + modelName + ",服务器内部训练集路径" + serverForMatData);
+        KubernetesApiClient defaultClient = FileControllerService.getCustomClient(tuningModelnService.getServerId(tuningModelnEntity));
+
 //        V1Volume[] v1Volumes = new V1Volume[
 //                ]{new V1Volume().name("modelpath").hostPath(new V1HostPathVolumeSource().path(modelWarehouseService.find(tuningModelnEntity.getModelId()).getPath()).type("DirectoryOrCreate")),
 //                new V1Volume().name("formatteddata").hostPath(new V1HostPathVolumeSource().path(serverForMatData).type("DirectoryOrCreate")),
@@ -498,11 +559,11 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
 //                new V1Volume().name("output").hostPath(new V1HostPathVolumeSource().path(serverOutPut).type("DirectoryOrCreate"))};
         //20241101 lm 增加共享内存配置的修改以及增加cuda服务的挂载
         V1Volume[] v1Volumes = new V1Volume[
-                ]{new V1Volume().name("modelpath").hostPath(new V1HostPathVolumeSource().path(modelWarehouseService.find(tuningModelnEntity.getModelId()).getPath()).type("DirectoryOrCreate")),
-                new V1Volume().name("formatteddata").hostPath(new V1HostPathVolumeSource().path(serverForMatData).type("DirectoryOrCreate")),
+                ]{new V1Volume().name("modelpath").hostPath(new V1HostPathVolumeSource().path(modelWarehouseService.find(tuningModelnEntity.getModelId()).getPath()).type("Directory")),
+                new V1Volume().name("formatteddata").hostPath(new V1HostPathVolumeSource().path(serverForMatData+"/train.json").type("File")),
                 //原本k8s自带的共享内存区域只有64MB很小.为了多卡微调功能考虑 这里手动增大共享内存区域
                 new V1Volume().name("dshm").emptyDir(MaasConst.SHM_AREA_2GB),
-                new V1Volume().name("cuda").hostPath(new V1HostPathVolumeSource().path(MaasConst.CUDA_HOME).type("DirectoryOrCreate")),
+                new V1Volume().name("cuda").hostPath(new V1HostPathVolumeSource().path(defaultClient.getServer().getCudaToolkitDir()).type("Directory")),
                 //设置训练集的生成路径
 //				new V1Volume().name("formatteddata").hostPath(new V1HostPathVolumeSource().path(trainDataEntity.getPath()).type("DirectoryOrCreate")),
                 new V1Volume().name("output").hostPath(new V1HostPathVolumeSource().path(serverOutPut).type("DirectoryOrCreate"))};
@@ -511,9 +572,8 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
         v1VolumeMounts.add(new V1VolumeMount().name("output").mountPath(outPut));
         v1VolumeMounts.add(new V1VolumeMount().name("dshm").mountPath("/dev/shm"));
         //默认的训练路径一般是/fine_tuning/formatted_data
-        v1VolumeMounts.add(new V1VolumeMount().name("formatteddata").mountPath("/fine_tuning/dataset"));
+        v1VolumeMounts.add(new V1VolumeMount().name("formatteddata").mountPath("/fine_tuning/dataset/train.json"));
         v1VolumeMounts.add(new V1VolumeMount().name("cuda").mountPath(MaasConst.CUDA_HOME));
-        KubernetesApiClient defaultClient = FileControllerService.getCustomClient(tuningModelnService.getServerId(tuningModelnEntity));
 
         //20241106 lm增加多卡功能 判断显卡参数 如果显卡数量>0并且选择了显卡框架 则启动多卡方案 但是都要检查是否有可用的卡
         if (tuningModelnEntity.getMultipleServersConfigs().size()>1) {
@@ -558,13 +618,17 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
         deployAppVo.setV1VolumeMounts(v1VolumeMounts);
         deployAppVo.setV1Volumes(v1Volumes);
         deployAppVo.setEnvVarList(envVarList);
+        deployAppVo.setSecretName(defaultRegistryAddress.getKeyName());
+        if (StringUtils.isEmpty(deployAppVo.getSecretName())){
+            deployAppVo.setSecretName(KubernetesConfig.getImagePullSecrets());
+        }
 
         deployAppVo.setCommands(new String[]{"sleep"});
         String[] args = new String[]{"infinity"};
         deployAppVo.setArgs(Arrays.asList(args));
         //开始发布
         try {
-            kubernetesNameSpaceHandler.createNameSpace(defaultClient, nameSpace);
+            kubernetesNameSpaceHandler.createNameSpace(defaultClient, nameSpace,defaultRegistryAddress.getKeyName(),defaultRegistryAddress);
             V1Pod readPod = kubernetesPodHandler.getPod(defaultClient, nameSpace, appcode);
             if (Objects.nonNull(readPod)) {
                 return tuningModelnService.setFailStatus(tuningModelnEntity,"已创建服务!请耐心等待任务完成!");
@@ -598,7 +662,7 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
                 .withVolumeMounts(v1VolumeMounts)
                 .build());
         V1LocalObjectReference imagePullSecret = new V1LocalObjectReference();
-        imagePullSecret.setName("badouregistrykey");
+        imagePullSecret.setName(defaultRegistryAddress.getKeyName());
 
         List<V1LocalObjectReference> secretlists = new ArrayList<>();
         secretlists.add(imagePullSecret);
@@ -699,37 +763,38 @@ public class ModelPlanTaskMqReceiver implements IBaseTaskMqReceiver{
                 String trainDataPath = tuningModelnEntity.getCreatePath() + "/" + tuningModelnEntity.getModelFile();
                 //微调模式 0.指令监督微调数据集 1.预训练数据集 2.偏好数据集 3.KTO数据集 4.多模态
                 //检查当前框架和数据集类型 是否存在需要额外挂载的执行文件
-                DictionaryCacheObject configFilesDic = MaasConst.buildConfigDic(tuningModelnEntity);
-                if (configFilesDic != null) {
-                    HashMap<String, String> params = new HashMap<>();
-                    params.put("trainDataPath", tuningModelnEntity.getCreatePath());
-                    for (DictionaryItemCacheObject item : configFilesDic.getItems()) {
-                        if (StringUtils.isNotBlank(item.getValue())) {
-                            String mountFilePath = item.getName();
-                            if (mountFilePath.contains("${") && mountFilePath.contains("}")) {
-                                mountFilePath = ParamInvalidUtil.replaceVarValue(mountFilePath, params);
-                            }
-                            String hostFilesPath = MaasConst.buildConfigPath(tuningModelnEntity)+ mountFilePath;
-//                        String hostFilesPath = "/home/aimodel/config/"+tuningModelnEntity.getModelName()+"/"+tuningModelnEntity.getCode() + mountFilePath;
-
-                            fileControllerService.createPath(tuningModelnEntity,MaasConst.buildModelOutPath(tuningModelnEntity),customClient);
-                            JSONObject configFileResult = fileControllerService.downFile(tuningModelnEntity,item.getValue(), hostFilesPath, customClient, null);
-                            if (tuningModelnEntity.getDoStatus() == MaasConst.DOPLAN_FAIL_STATUS) {
-                                log.error(configFileResult.toJSONString());
-                                return true;
-                            }
-                            if (tuningModelnEntity.getNameFilesPath() == null){
-                                tuningModelnEntity.setNameFilesPath("");
-                            }
-                            //只配置主节点
-                            if (!tuningModelnEntity.getNameFilesPath().contains(item.getCode())){
-                                tuningModelnEntity.setHostFilesPath(StringUtils.isEmpty(tuningModelnEntity.getHostFilesPath()) ? hostFilesPath : tuningModelnEntity.getHostFilesPath() + "," + hostFilesPath);
-                                tuningModelnEntity.setMountFilesPath(StringUtils.isEmpty(tuningModelnEntity.getMountFilesPath()) ? mountFilePath : tuningModelnEntity.getMountFilesPath() + "," + mountFilePath);
-                                tuningModelnEntity.setNameFilesPath(StringUtils.isEmpty(tuningModelnEntity.getNameFilesPath()) ? item.getCode() : tuningModelnEntity.getNameFilesPath() + "," + item.getCode());
-                            }
-                        }
-                    }
-                }
+                //20250717 废弃破旧的模式 不再通过AIMAAS平台自身来提交配置文件 很难做到环境统一
+//                DictionaryCacheObject configFilesDic = MaasConst.buildConfigDic(tuningModelnEntity);
+//                if (configFilesDic != null) {
+//                    HashMap<String, String> params = new HashMap<>();
+//                    params.put("trainDataPath", tuningModelnEntity.getCreatePath());
+//                    for (DictionaryItemCacheObject item : configFilesDic.getItems()) {
+//                        if (StringUtils.isNotBlank(item.getValue())) {
+//                            String mountFilePath = item.getName();
+//                            if (mountFilePath.contains("${") && mountFilePath.contains("}")) {
+//                                mountFilePath = ParamInvalidUtil.replaceVarValue(mountFilePath, params);
+//                            }
+//                            String hostFilesPath = MaasConst.buildConfigPath(tuningModelnEntity)+ mountFilePath;
+////                        String hostFilesPath = "/home/aimodel/config/"+tuningModelnEntity.getModelName()+"/"+tuningModelnEntity.getCode() + mountFilePath;
+//
+//                            fileControllerService.createPath(tuningModelnEntity,MaasConst.buildModelOutPath(tuningModelnEntity),customClient);
+//                            JSONObject configFileResult = fileControllerService.downFile(tuningModelnEntity,item.getValue(), hostFilesPath, customClient, null);
+//                            if (tuningModelnEntity.getDoStatus() == MaasConst.DOPLAN_FAIL_STATUS) {
+//                                log.error(configFileResult.toJSONString());
+//                                return true;
+//                            }
+//                            if (tuningModelnEntity.getNameFilesPath() == null){
+//                                tuningModelnEntity.setNameFilesPath("");
+//                            }
+//                            //只配置主节点
+//                            if (!tuningModelnEntity.getNameFilesPath().contains(item.getCode())){
+//                                tuningModelnEntity.setHostFilesPath(StringUtils.isEmpty(tuningModelnEntity.getHostFilesPath()) ? hostFilesPath : tuningModelnEntity.getHostFilesPath() + "," + hostFilesPath);
+//                                tuningModelnEntity.setMountFilesPath(StringUtils.isEmpty(tuningModelnEntity.getMountFilesPath()) ? mountFilePath : tuningModelnEntity.getMountFilesPath() + "," + mountFilePath);
+//                                tuningModelnEntity.setNameFilesPath(StringUtils.isEmpty(tuningModelnEntity.getNameFilesPath()) ? item.getCode() : tuningModelnEntity.getNameFilesPath() + "," + item.getCode());
+//                            }
+//                        }
+//                    }
+//                }
                 //20241025 lm 增加微调的时候 可以指定奖励模型用于评估训练效果
                 if (tuningModelnEntity.getDoFrame() == 0 && StringUtils.isNotBlank(tuningModelnEntity.getRewardId())) {
                     //如果有奖励模型 原本的配置文件将不生效 统一改成奖励训练 去掉原本自带的template-lora-sft.yaml文件

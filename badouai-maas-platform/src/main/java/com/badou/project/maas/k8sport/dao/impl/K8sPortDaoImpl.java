@@ -3,7 +3,6 @@ package com.badou.project.maas.k8sport.dao.impl;
 import com.badou.brms.base.support.hibernate.BaseHibernateDAO;
 import com.badou.project.maas.k8sport.dao.IK8sPortDao;
 import com.badou.project.maas.modelapp.model.ModelAppEntity;
-import io.swagger.models.auth.In;
 import org.hibernate.SQLQuery;
 import org.springframework.stereotype.Repository;
 

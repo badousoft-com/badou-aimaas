@@ -4,8 +4,10 @@ import com.alibaba.fastjson.JSONObject;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.kubernetes.handler.KubernetesExecHandler;
 import com.badou.project.kubernetes.vo.ProcessStatusVo;
+import com.badou.project.maas.MaasConst;
 import com.badou.tools.common.util.StringUtils;
 import com.google.common.base.Preconditions;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.kubernetes.client.Exec;
 import io.kubernetes.client.openapi.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -85,7 +87,7 @@ public class KubernetesExecHandlerImpl implements KubernetesExecHandler {
     public JSONObject execCommandOnce(String podName, String namespace, KubernetesApiClient kubernetesApiClient, String[] commands) throws IOException, ApiException, InterruptedException {
         String commandStrs = "";
         for (String commandStr : commands) {
-            commandStrs += commandStr + " ";
+            commandStrs += commandStr + "\t";
         }
         log.info("k8s命令执行:" + commandStrs);
         Exec exec = new Exec();

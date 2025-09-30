@@ -7,17 +7,18 @@ import com.badou.brms.dboperation.query.support.QueryHibernatePlaceholderParam;
 import com.badou.project.cache.util.JedisUtil;
 import com.badou.project.common.webparams.util.JsonResultUtil;
 import com.badou.project.exception.DataEmptyException;
+import com.badou.project.exception.DataErrorException;
 import com.badou.project.exception.DataValidException;
 import com.badou.project.gpucalc.model.MultipleServersConfig;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.kubernetes.client.KubernetesApiClientFactory;
 import com.badou.project.kubernetes.config.KubernetesConfig;
-import com.badou.project.kubernetes.handler.KubernetesExecHandler;
-import com.badou.project.kubernetes.handler.KubernetesNameSpaceHandler;
-import com.badou.project.kubernetes.handler.KubernetesPodHandler;
-import com.badou.project.kubernetes.handler.KubernetesYamlHandler;
+import com.badou.project.kubernetes.handler.*;
+import com.badou.project.kubernetes.util.KubernetesConfigUtil;
 import com.badou.project.kubernetes.vo.DeployAppVo;
 import com.badou.project.maas.MaasConst;
+import com.badou.project.maas.registryaddress.model.RegistryAddressEntity;
+import com.badou.project.maas.registryaddress.service.IRegistryAddressService;
 import com.badou.project.maas.tuningmodeln.model.TuningModelnEntity;
 import com.badou.project.maas.tuningmodeln.service.ITuningModelnService;
 import com.badou.project.server.model.K8sServerConfEntity;
@@ -58,7 +59,11 @@ public class FileControllerService implements CommandLineRunner {
     private IK8sServerConfService k8sServerConfService;
     @Autowired
     private JedisUtil jedisUtil;
-    private static final Map<String,KubernetesApiClient> k8sClientCache = new HashMap<>();
+//    private static final Map<String,KubernetesApiClient> k8sClientCache = new HashMap<>();
+    @Autowired
+    private IRegistryAddressService registryAddressService;
+    @Autowired
+    private KubernetesServiceHandler kubernetesServiceHandler;
 
     //认证后端地址
     private String oauthUrl;
@@ -110,6 +115,9 @@ public class FileControllerService implements CommandLineRunner {
         queryCriterion.addParam(new QueryHibernatePlaceholderParam("FLG_DELETED",0,null, QueryOperSymbolEnum.eq));
         List<K8sServerConfEntity> k8sServerConfEntities = k8sServerConfService.find(queryCriterion);
 
+        InetAddress localhost = InetAddress.getLoopbackAddress();
+        log.info("当前执行服务器IP: " + localhost.getHostAddress());
+
         log.info("开始初始化K8S集群服务器-文件服务!处理数量:"+k8sServerConfEntities.size());
         for(K8sServerConfEntity k8sServerConfEntity:k8sServerConfEntities){
             //第一次初始化的时候清空key
@@ -124,9 +132,17 @@ public class FileControllerService implements CommandLineRunner {
                     log.info("生产机"+k8sServerConfEntity.getRemark()+"跳过处理");
                     continue;
                 }
+                log.info("本地服务器 启动本地客户端配置文件");
+            }else {
+                log.info("远程服务器 启动在线客户端配置文件");
             }
             log.info("初始化服务器"+k8sServerConfEntity.getAddress());
-            initServerServe(k8sServerConfEntity);
+            try {
+                initServerServe(k8sServerConfEntity);
+            }catch (Exception e){
+                e.printStackTrace();
+                log.info("初始化失败");
+            }
         }
 
     }
@@ -137,91 +153,119 @@ public class FileControllerService implements CommandLineRunner {
      * @throws Exception
      */
     public void initServerServe(K8sServerConfEntity k8sServerConfEntity) throws Exception {
+        RegistryAddressEntity defaultRegistryAddress = registryAddressService.getDefaultRegistryAddress();
+        if (defaultRegistryAddress == null){
+            throw new DataValidException("未配置默认镜像仓库!请联系管理员!");
+        }
+
         KubernetesApiClient defaultClient = KubernetesApiClientFactory.build(k8sServerConfEntity);
+
+        String deploymentName = FileControllerService.deploymentName+"-"+k8sServerConfEntity.getCode();
         V1Namespace v1Namespace = null;
-        V1Namespace downloadNginxNamespace = null;
-        //检查服务状态 如果有则返回ok 如果不存在则创建
         try {
-            //要确保连的上默认的k8s服务
-            v1Namespace = kubernetesNameSpaceHandler.readNamespace(defaultClient,nameSpace);
-            downloadNginxNamespace = kubernetesNameSpaceHandler.readNamespace(defaultClient, MaasConst.DOWNLOAD_NGINX_NS);
+            //同时也刷新镜像仓库信息
+            v1Namespace = kubernetesNameSpaceHandler.createNameSpace(defaultClient,nameSpace,defaultRegistryAddress.getKeyName(),defaultRegistryAddress);
         } catch (ApiException e) {
             e.printStackTrace();
         }
         if(Objects.isNull(v1Namespace)){
-            try {
-                v1Namespace = kubernetesNameSpaceHandler.createNameSpace(defaultClient,nameSpace);
-            } catch (ApiException e) {
-                e.printStackTrace();
-            }
-            if(Objects.isNull(v1Namespace)){
-                // 如果还是空 代表无法创建命名空间成功!
-                throw new Exception("文件管理服务创建失败!");
-            }
+            // 如果还是空 代表无法创建命名空间成功!
+            throw new Exception("初始化文件服务失败!");
         }
-        if(Objects.isNull(downloadNginxNamespace)){
-            try {
-                downloadNginxNamespace = kubernetesNameSpaceHandler.createNameSpace(defaultClient,MaasConst.DOWNLOAD_NGINX_NS);
-            } catch (ApiException e) {
-                e.printStackTrace();
-            }
-            if(Objects.isNull(downloadNginxNamespace)){
-                // 如果还是空 代表无法创建命名空间成功!
-                throw new Exception("模型文件下载服务创建失败!");
-            }
-        }
+        //20250721 移除下载模型的镜像 取消服务
+//        if(Objects.isNull(downloadNginxNamespace)){
+//            try {
+//                downloadNginxNamespace = kubernetesNameSpaceHandler.createNameSpace(defaultClient,MaasConst.DOWNLOAD_NGINX_NS);
+//            } catch (ApiException e) {
+//                e.printStackTrace();
+//            }
+//            if(Objects.isNull(downloadNginxNamespace)){
+//                // 如果还是空 代表无法创建命名空间成功!
+//                throw new Exception("模型文件下载服务创建失败!");
+//            }
+//        }
         List<V1Pod> nodePods = kubernetesPodHandler.getNodePods(defaultClient, nameSpace, k8sServerConfEntity.getCode());
+        for (V1Pod nodePod : nodePods) {
+            if (!MaasConst.K8S_POD_RUNNING.equals(nodePod.getStatus().getPhase())){
+                log.warn("服务器"+defaultClient.getApiClient().getBasePath()+"初始化节点文件服务处于失败的状态,信息:"+nodePod.getStatus().getMessage());
+                kubernetesPodHandler.deleteDeployment(defaultClient,nameSpace,deploymentName);
+                nodePods.clear();
+                break;
+            }
+        }
+        //如果存在数据 确认下是不是Running
         if (nodePods.size() == 0){
             DeployAppVo deployAppVo = new DeployAppVo();
-            List<V1Volume> v1VolumesList = new ArrayList<>();
-            //服务器挂载目录 一般用来存储配置文件、训练集等数据
-            v1VolumesList.add(new V1Volume().name("volumn-path").hostPath(new V1HostPathVolumeSource().type("DirectoryOrCreate").path(k8sServerConfEntity.getVolumnPath())));
-            ArrayList<V1VolumeMount> v1VolumeMounts = new ArrayList<>();
-            v1VolumeMounts.add(new V1VolumeMount().name("volumn-path").mountPath(k8sServerConfEntity.getVolumnPath()));
-            String[] modelPaths = k8sServerConfEntity.getModelPaths().split(",");
-            int n = 0;
-            for (String modelPath : modelPaths) {
-                //模型挂载目录 只存模型本身
-                v1VolumesList.add(new V1Volume().name("model-path"+n).hostPath(new V1HostPathVolumeSource().type("DirectoryOrCreate").path(modelPath)));
-                v1VolumeMounts.add(new V1VolumeMount().name("model-path"+n).mountPath(modelPath));
-                n++;
+            //根据服务器信息 形成挂载路径
+            buildK8sPath(deployAppVo,k8sServerConfEntity);
+//            deployAppVo.setCommands(new String[]{"/bin/sh","-ce","tail -f /dev/null"});
+//            ArrayList<String> args = new ArrayList<>();
+//            args.add("while true; do sleep 30; done;");
+//            deployAppVo.setArgs(args);
+//            deployAppVo.setDnsPolicy("Default");
+            deployAppVo.setV1Volumes(deployAppVo.getV1Volumes());
+            List<V1EnvVar> initEnvList = new ArrayList<>();
+            initEnvList.add(new V1EnvVar().name(MaasConst.NVIDIA_VISIBLE_DEVICES).value("all"));
+            deployAppVo.setEnvVarList(initEnvList);
+            deployAppVo.setSecretName(defaultRegistryAddress.getKeyName());
+            if(StringUtils.isEmpty(deployAppVo.getSecretName())){
+                log.info("当前为公开仓库 设置空密钥");
+                deployAppVo.setSecretName(KubernetesConfig.getImagePullSecrets());
             }
-
-            V1Volume[] v1Volumes = v1VolumesList.toArray(new V1Volume[]{});
-
-
-            deployAppVo.setCommands(new String[]{"/bin/sh","-ce","tail -f /dev/null"});
-            ArrayList<String> args = new ArrayList<>();
-            args.add("while true; do sleep 30; done;");
-            deployAppVo.setArgs(args);
-            deployAppVo.setDnsPolicy("Default");
-            deployAppVo.setV1Volumes(v1Volumes);
-            deployAppVo.setSecretName(KubernetesConfig.getImagePullSecrets());
-            deployAppVo.setV1VolumeMounts(v1VolumeMounts);
+            deployAppVo.setV1VolumeMounts(deployAppVo.getV1VolumeMounts());
             deployAppVo.setNodeName(k8sServerConfEntity.getCode());
-            String deploymentName = FileControllerService.deploymentName+"-"+k8sServerConfEntity.getCode();
+            String imageName = KubernetesConfigUtil.buildImageName(defaultRegistryAddress.getAddress(), defaultRegistryAddress.getProjectName(), "monitor_gpus", "1.0");
+            log.info("服务器初始化执行容器..."+imageName);
             //这个容器 需要有unzip和curl命令和 Bash模式
-            kubernetesPodHandler.createDeploymentAndDeploy(defaultClient,nameSpace,deploymentName,"docker.1ms.run/kubeless/unzip:latest",1,false,KubernetesConfig.getImagePullSecrets(),deployAppVo);
-            log.info("k8s命名空间的"+nameSpace+"的服务"+deploymentName+"已提交部署!未编写监听成功请手动检查是否成功");
-            log.info("如果未部署成功.训练集管理相关的服务不能正常成功!请确保成功");
+            kubernetesPodHandler.createDeploymentAndDeploy(defaultClient,nameSpace,deploymentName,imageName,1,false,deployAppVo);
+            //最多等待启动1分钟
+            String initResult = kubernetesPodHandler.checkPodRunning(defaultClient, nameSpace, deploymentName, 1);
+            if (StringUtils.isNotEmpty(initResult)){
+                throw new DataErrorException(initResult);
+            }
+            //判断是否存在
+            V1ServiceList nowSvc = kubernetesServiceHandler.getServiceByCode(defaultClient, nameSpace, deploymentName);
+            if (nowSvc == null || nowSvc.getItems().size() == 0){
+                //为服务创建SVC
+                kubernetesServiceHandler.createServiceAndDeploy(defaultClient,nameSpace,deploymentName,deploymentName,"TCP",8998,8998,31899,false);
+            }
         }else {
             log.info("集群服务器"+k8sServerConfEntity.getCode()+"已存在文件操作服务.K8S客户端验证完成.状态通过√");
         }
         //服务器检查完毕 服务器文件控制服务检查完毕 开始检查文件下载Nginx服务
-        log.info("开始初始化K8S集群服务器-文件下载服务!");
+//        log.info("开始初始化K8S集群服务器-文件下载服务!");
         //检查服务状态 如果有则返回ok 如果不存在则创建
-        V1PodList downLoadNginx = kubernetesPodHandler.getPodByDeployment(defaultClient, MaasConst.DOWNLOAD_NGINX_NS, MaasConst.DOWNLOAD_NGINX_NS);
-        if (downLoadNginx == null || downLoadNginx.getItems().size() == 0){
-            //初始化
-            kubernetesYamlHandler.startDownLoadNginx(defaultClient);
+//        V1PodList downLoadNginx = kubernetesPodHandler.getPodByDeployment(defaultClient, MaasConst.DOWNLOAD_NGINX_NS, MaasConst.DOWNLOAD_NGINX_NS);
+//        if (downLoadNginx == null || downLoadNginx.getItems().size() == 0){
+//            //初始化
+//            kubernetesYamlHandler.startDownLoadNginx(defaultClient);
+//        }
+    }
+
+    public static DeployAppVo buildK8sPath(DeployAppVo deployAppVo,K8sServerConfEntity k8sServerConfEntity){
+        List<V1Volume> v1VolumesList = new ArrayList<>();
+        //服务器挂载目录 一般用来存储配置文件、训练集等数据
+        v1VolumesList.add(new V1Volume().name("volumn-path").hostPath(new V1HostPathVolumeSource().type("DirectoryOrCreate").path(k8sServerConfEntity.getVolumnPath())));
+        v1VolumesList.add(new V1Volume().name("cuda-toolkit-dir").hostPath(new V1HostPathVolumeSource().type("DirectoryOrCreate").path(k8sServerConfEntity.getCudaToolkitDir())));
+        ArrayList<V1VolumeMount> v1VolumeMounts = new ArrayList<>();
+        v1VolumeMounts.add(new V1VolumeMount().name("volumn-path").mountPath(k8sServerConfEntity.getVolumnPath()));
+        v1VolumeMounts.add(new V1VolumeMount().name("cuda-toolkit-dir").mountPath(k8sServerConfEntity.getCudaToolkitDir()));
+        String[] modelPaths = k8sServerConfEntity.getModelPaths().split(",");
+        int n = 0;
+        for (String modelPath : modelPaths) {
+            //模型挂载目录 只存模型本身
+            v1VolumesList.add(new V1Volume().name("model-path"+n).hostPath(new V1HostPathVolumeSource().type("DirectoryOrCreate").path(modelPath)));
+            v1VolumeMounts.add(new V1VolumeMount().name("model-path"+n).mountPath(modelPath));
+            n++;
         }
+        V1Volume[] v1Volumes = v1VolumesList.toArray(new V1Volume[]{});
+
+        deployAppVo.setV1VolumeMounts(v1VolumeMounts);
+        deployAppVo.setV1Volumes(v1Volumes);
+        return deployAppVo;
     }
 
     public static KubernetesApiClient getCacheK8sClient(String serverId){
-        KubernetesApiClient kubernetesApiClient = k8sClientCache.get(serverId);
-        if (kubernetesApiClient!=null){
-            return kubernetesApiClient;
-        }
         K8sServerConfEntity k8sCustomServer = SpringHelper.getBean(IK8sServerConfService.class).getK8sCustomServer(serverId);
 
         try {
@@ -266,7 +310,7 @@ public class FileControllerService implements CommandLineRunner {
         //根据模型的路径计算模型文件大小
         KubernetesApiClient kubernetesApiClient = null;
         try {
-            kubernetesApiClient = FileControllerService.getCustomClient(k8sServerConfEntity.getId());
+            kubernetesApiClient = KubernetesApiClientFactory.build(k8sServerConfEntity);
             List<V1Pod> filePods = kubernetesPodHandler.getPodByLabelApp(kubernetesApiClient, FileControllerService.deploymentName, FileControllerService.deploymentName + "-" + k8sServerConfEntity.getCode());
             if (filePods.size()!=1){
                 throw new DataValidException("识别仓库信息异常!请联系管理员!");
@@ -316,7 +360,6 @@ public class FileControllerService implements CommandLineRunner {
     public static KubernetesApiClient getCustomClient(String serverId) throws Exception {
         IK8sServerConfService ik8sServerConfService = SpringHelper.getBean(IK8sServerConfService.class);
 
-        KubernetesApiClient kubernetesApiClient1 = k8sClientCache.get(serverId);
         //20250326 增加操作子节点时候 切换为主节点的k8s操作客户端
 //        if (kubernetesApiClient1!=null && StringUtils.isNoneBlank(kubernetesApiClient1.getServer().getParentId())){
 //            String parentId = kubernetesApiClient1.getServer().getParentId();
@@ -334,9 +377,6 @@ public class FileControllerService implements CommandLineRunner {
 //            log.info(tipMsgPreFix+"切换为主节点操作"+kubernetesApiClient1.getServer().getCode());
 //        }
 
-        if(kubernetesApiClient1!=null){
-            return kubernetesApiClient1;
-        }
         //20250116 增加master节点的支持
 //        if (serverId.contains(",") && kubernetesApiClient1 == null){
 //            String[] servers = serverId.split(",");
@@ -354,12 +394,12 @@ public class FileControllerService implements CommandLineRunner {
             throw new Exception("无效的服务器!请联系管理员!");
         }
         KubernetesApiClient kubernetesApiClient = KubernetesApiClientFactory.build(k8sCustomServer);
-        k8sClientCache.put(serverId,kubernetesApiClient);
-        //20250326 增加操作子节点时候 切换为主节点的k8s操作客户端
-        if (kubernetesApiClient1!=null && StringUtils.isNoneBlank(kubernetesApiClient1.getServer().getParentId())){
-            kubernetesApiClient = k8sClientCache.get(kubernetesApiClient1.getServer().getParentId());
-            log.info("子节点切换为"+kubernetesApiClient1.getServer().getCode());
-        }
+//        k8sClientCache.put(serverId,kubernetesApiClient);
+//        //20250326 增加操作子节点时候 切换为主节点的k8s操作客户端
+//        if (kubernetesApiClient1!=null && StringUtils.isNoneBlank(kubernetesApiClient1.getServer().getParentId())){
+//            kubernetesApiClient = k8sClientCache.get(kubernetesApiClient1.getServer().getParentId());
+//            log.info("子节点切换为"+kubernetesApiClient1.getServer().getCode());
+//        }
         return kubernetesApiClient;
     }
 

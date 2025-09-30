@@ -14,11 +14,7 @@ import com.badou.project.maas.common.FileControllerService;
 import com.badou.project.maas.tuningmodeln.model.TuningModelnEntity;
 import com.badou.project.maas.tuningmodeln.service.ITuningModelnService;
 import com.badou.tools.common.util.StringUtils;
-import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.hssf.record.DVALRecord;
-import org.springframework.amqp.rabbit.annotation.RabbitHandler;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Component;
@@ -52,7 +48,7 @@ public class CalcLogMqReceiver {
 
     public Map<String, List> getStatus(String id) throws ParseException {
         TuningModelnEntity tuningModelnEntity = tuningModelnService.find(id);
-        if (JsonResultUtil.isNull(tuningModelnEntity)) {
+        if (tuningModelnEntity == null) {
             return null;
         }
         String oldMsg = tuningModelnEntity.getPlanMsg();

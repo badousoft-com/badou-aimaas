@@ -26,7 +26,7 @@ public class KubernetesConfig {
      * 通过kubectl create secret创建了对应镜像仓库的密钥,并在创建容器时指定密钥拉取私有仓库的镜像
      *  imagePullSecrets写根据当前正在使用的镜像仓库的账号信息生成的key名
      */
-    private static String imagePullSecrets = "badouregistrykey";
+    private static String imagePullSecrets = "aimaasregistrykey";
 
     public static String getRegistryAddress() {
         return registryAddress;

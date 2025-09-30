@@ -1,6 +1,7 @@
 package com.badou.project.kubernetes.handler;
 
 import com.badou.project.kubernetes.client.KubernetesApiClient;
+import com.badou.project.maas.registryaddress.model.RegistryAddressEntity;
 import io.kubernetes.client.custom.PodMetricsList;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.*;
@@ -62,12 +63,16 @@ public interface KubernetesNameSpaceHandler {
     V1Status deleteNameSpace(KubernetesApiClient kubernetesApiClient,String nameSpace) throws ApiException;
 
     /**
-     * 创建命名空间
-     * @param nameSpaceName 命名空间名字
-     * @return 生成的命名空间对象
+     * @return
+     * 创建命名空间 带镜像仓库密钥
+     * @param kubernetesApiClient k8s客户端
+     * @param nameSpaceName 命名空间
+     * @param secretName 密钥名称
+     * @param registryAddressEntity 镜像仓库名称
+     * @return
      * @throws ApiException
      */
-    V1Namespace createNameSpace(KubernetesApiClient kubernetesApiClient,String nameSpaceName) throws ApiException;
+    V1Namespace createNameSpace(KubernetesApiClient kubernetesApiClient, String nameSpaceName, String secretName,RegistryAddressEntity registryAddressEntity) throws ApiException;
 
     /**
      * 设置命名空间资源限制

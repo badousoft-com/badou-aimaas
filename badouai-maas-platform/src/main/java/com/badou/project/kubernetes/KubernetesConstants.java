@@ -46,13 +46,13 @@ public class KubernetesConstants {
     //默认的密码长度16
     public static final int DEFAULT_MAX_PWD_LENGTH16 = 16;
     // 多实例等待次数-1分钟
-    public static final int DEFAULT_INSTACE_WAIT_COUNT = 12;
+    public static final int DEFAULT_INSTACE_WAIT_COUNT = 60;
     // 多实例等待时长
     public static final int DEFAULT_INSTACE_WAIT_SECONDS = 2;
     // 创建中等待时长-10分钟
     public static final int DEFAULT_CREATING_WAIT_SECONDS = 3;
     // 创建中等待最大次数
-    public static final int DEFAULT_CREATING_WAIT_COUNT = 200;
+    public static final int DEFAULT_CREATING_WAIT_COUNT = 60;
     // 移除应用等待-等待次数-5分钟
     public static final int DEFAULT_REMOVE_APP_WAIT_COUNT = 60;
     // 移除应用等待-每次等待时间-5秒

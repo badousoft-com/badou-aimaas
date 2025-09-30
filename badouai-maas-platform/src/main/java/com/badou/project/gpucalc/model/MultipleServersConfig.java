@@ -7,15 +7,9 @@ import com.badou.project.maas.common.FileControllerService;
 import com.badou.project.maas.trainplan.model.TrainPlanEntity;
 import com.badou.project.maas.tuningmodeln.model.TuningModelnEntity;
 import com.badou.project.server.model.K8sServerConfEntity;
-import com.badou.tools.common.util.SpringHelper;
-import com.badou.tools.common.util.StringUtils;
-import io.kubernetes.client.openapi.models.V1Node;
-import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 //由于K8s是主节点的形式.这里只会有主节点的KubernetesApiClient客户端.就能操作全部服务器
@@ -131,96 +125,96 @@ public class MultipleServersConfig {
         return "服务器: "+k8sServerConfEntity.getAddress()+",\n可分配显卡: "+canGpuCardNos+"\n已分配显卡: "+useGpuCardNos+"\n未分配显卡: "+emptyGpuCardNos;
     }
 
-    public static void main(String[] args) throws DataEmptyException {
-        TrainPlanEntity trainPlanEntity = new TrainPlanEntity();
-        trainPlanEntity.setPreGpucache(22);
-        trainPlanEntity.setGpuCount(1);
-
-        //模拟显卡未用过
-        Map<Integer,GpuCalcCardModel> gpuCalcCardModels = new HashMap<>();
-        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,0,22));
-        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,0,22));
-        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
-        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,0,22));
-        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
-
-        MultipleServersConfig multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
-        System.out.println("模拟显卡未用过");
-        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
-        //模拟显卡用了一张
-        gpuCalcCardModels = new HashMap<>();
-        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,12,22));
-        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,0,22));
-        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
-        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,0,22));
-        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
-        System.out.println("模拟显卡用过一张 规则");
-        multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
-        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
-
-        gpuCalcCardModels = new HashMap<>();
-        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,0,22));
-        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,12,22));
-        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
-        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,0,22));
-        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
-        System.out.println("模拟显卡用过一张 不规则");
-        multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
-        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
-        //模拟显卡用了两张 不规则
-        gpuCalcCardModels = new HashMap<>();
-        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,0,22));
-        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,12,22));
-        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
-        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,12,22));
-        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
-        System.out.println("模拟显卡用过两张 不规则");
-        trainPlanEntity.setGpuCount(2);
-        multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
-        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
-
-        //模拟显卡用了两张 规则
-        gpuCalcCardModels = new HashMap<>();
-        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,12,22));
-        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,12,22));
-        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
-        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,0,22));
-        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
-        System.out.println("模拟显卡用过两张 规则");
-        trainPlanEntity.setGpuCount(2);
-        multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
-        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
-        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
-        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
-        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
-    }
+//    public static void main(String[] args) throws DataEmptyException {
+//        TrainPlanEntity trainPlanEntity = new TrainPlanEntity();
+//        trainPlanEntity.setPreGpucache(22);
+//        trainPlanEntity.setGpuCount(1);
+//
+//        //模拟显卡未用过
+//        Map<Integer,GpuCalcCardModel> gpuCalcCardModels = new HashMap<>();
+//        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,0,22));
+//        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,0,22));
+//        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
+//        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,0,22));
+//        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
+//
+//        MultipleServersConfig multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
+//        System.out.println("模拟显卡未用过");
+//        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
+//        //模拟显卡用了一张
+//        gpuCalcCardModels = new HashMap<>();
+//        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,12,22));
+//        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,0,22));
+//        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
+//        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,0,22));
+//        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
+//        System.out.println("模拟显卡用过一张 规则");
+//        multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
+//        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
+//
+//        gpuCalcCardModels = new HashMap<>();
+//        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,0,22));
+//        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,12,22));
+//        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
+//        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,0,22));
+//        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
+//        System.out.println("模拟显卡用过一张 不规则");
+//        multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
+//        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
+//        //模拟显卡用了两张 不规则
+//        gpuCalcCardModels = new HashMap<>();
+//        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,0,22));
+//        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,12,22));
+//        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
+//        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,12,22));
+//        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
+//        System.out.println("模拟显卡用过两张 不规则");
+//        trainPlanEntity.setGpuCount(2);
+//        multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
+//        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
+//
+//        //模拟显卡用了两张 规则
+//        gpuCalcCardModels = new HashMap<>();
+//        gpuCalcCardModels.put(0,new GpuCalcCardModel(0,12,22));
+//        gpuCalcCardModels.put(1,new GpuCalcCardModel(1,12,22));
+//        gpuCalcCardModels.put(2,new GpuCalcCardModel(2,0,22));
+//        gpuCalcCardModels.put(3,new GpuCalcCardModel(3,0,22));
+//        gpuCalcCardModels.put(4,new GpuCalcCardModel(4,0,22));
+//        System.out.println("模拟显卡用过两张 规则");
+//        trainPlanEntity.setGpuCount(2);
+//        multipleServersConfig = new MultipleServersConfig(trainPlanEntity, null, gpuCalcCardModels);
+//        System.out.println("需要显存"+multipleServersConfig.getNeedGpuNum());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNos());
+//        System.out.println("可分配"+multipleServersConfig.getCanGpuCardNoMap());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNos());
+//        System.out.println("已分配"+multipleServersConfig.getUseGpuCardNoMap());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNos());
+//        System.out.println("未分配"+multipleServersConfig.getEmptyGpuCardNoMap());
+//    }
 
     public TrainPlanEntity getTrainPlanEntity() {
         return trainPlanEntity;

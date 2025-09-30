@@ -718,38 +718,4 @@ public class ModelWarehouseEntity extends AppBaseEntity {
         this.customGpuCardName = customGpuCardName;
     }
 
-    public List<MultipleServersConfig> coverToServerCard(){
-        List<MultipleServersConfig> multipleServersConfigs = new ArrayList<>();
-        //2080-0,2080-3
-        if (StringUtils.isNotBlank(customGpuCardName)){
-            MultipleServersConfig multipleServersConfig = new MultipleServersConfig();
-            multipleServersConfigs.add(multipleServersConfig);
-            multipleServersConfig.setK8sServerConfEntity(SpringHelper.getBean(IK8sServerConfService.class).find(serverId));
-            multipleServersConfig.setCalcDoneFlag(true);
-            multipleServersConfig.setNeedGpuNum(startNeedGpum);
-
-            String[] cards = customGpuCardName.split(",");
-            String[] gpuCaches = customGpuCard.split(",");
-            for (int i = 0;i<cards.length;i++){
-                String[] split = cards[i].split("-");
-                String[] gpuCache = gpuCaches[i].split("=")[1].split("-");
-                if (split.length == 2){
-                    String cardNo = split[1];
-                    int cardNoInt = Integer.parseInt(cardNo);
-                    GpuCalcCardModel gpuCalcCardModel = new GpuCalcCardModel();
-                    gpuCalcCardModel.setCurrentVMemory(Integer.parseInt(gpuCache[0]));
-                    gpuCalcCardModel.setMaxVMemory(Integer.parseInt(gpuCache[1]));
-                    gpuCalcCardModel.setOrderNo(cardNoInt);
-                    multipleServersConfig.getCanGpuCardNoMap().put(cardNoInt,gpuCalcCardModel);
-                    multipleServersConfig.getGpuCalcCardModels().put(cardNoInt,gpuCalcCardModel);
-                    if (i < cards.length-1){
-                        multipleServersConfig.setCanGpuCardNos(multipleServersConfig.getCanGpuCardNos()+cardNo+",");
-                    }else {
-                        multipleServersConfig.setCanGpuCardNos(multipleServersConfig.getCanGpuCardNos()+cardNo);
-                    }
-                }
-            }
-        }
-        return multipleServersConfigs;
-    }
 }

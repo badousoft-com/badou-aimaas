@@ -14,15 +14,11 @@ import com.badou.project.GlobalConsts;
 import com.badou.project.common.webparams.util.JsonResultUtil;
 import com.badou.project.exception.DataEmptyException;
 import com.badou.project.exception.DataValidException;
-import com.badou.project.exception.ExecFailException;
 import com.badou.project.gpucalc.model.MultipleServersConfig;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
-import com.badou.project.kubernetes.handler.KubernetesNameSpaceHandler;
 import com.badou.project.kubernetes.handler.KubernetesPodHandler;
 import com.badou.project.kubernetes.handler.KubernetesServiceHandler;
-import com.badou.project.kubernetes.handler.impl.KubernetesBasePodHandlerImpl;
 import com.badou.project.kubernetes.util.StringHandlerUtil;
-import com.badou.project.kubernetes.vo.DeployAppVo;
 import com.badou.project.maas.MaasConst;
 import com.badou.project.maas.common.FileControllerService;
 import com.badou.project.maas.trainplan.model.TrainPlanEntity;
@@ -33,20 +29,14 @@ import com.badou.project.server.model.ServerGpuEntity;
 import com.badou.project.server.service.IK8sServerConfService;
 import com.badou.tools.common.util.SpringHelper;
 import com.badou.tools.common.util.StringUtils;
-import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Yaml;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Component;
-import springfox.documentation.spring.web.json.Json;
 
 import java.io.IOException;
-import java.sql.Time;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 /**
@@ -109,7 +99,7 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
     public List<V1Pod> buildServerConfig(TuningModelnEntity tuningModelnEntity, V1Pod v1Pod) {
         List<V1Pod> execPods = new LinkedList<>();
         //指定本次任务执行的服务
-            if (tuningModelnEntity.getMultipleServersConfigs().size() == 1) {
+        if (tuningModelnEntity.getMultipleServersConfigs().size() == 1) {
             v1Pod.getSpec().setNodeName(tuningModelnEntity.getMultipleServersConfigs().get(0).getK8sServerConfEntity().getCode());
             execPods.add(v1Pod);
             return execPods;
@@ -245,9 +235,6 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
                 }
             }
         }
-
-
-
 
         //20250102 lm 只有多卡的情况 才需要显卡计算 如果是单卡的情况 让显卡插件自动分配
         if (trainPlanEntity.getGpuCount() == null || GlobalConsts.ZERO.equals(trainPlanEntity.getGpuCount())) {
@@ -562,36 +549,36 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
         return null;
     }
 
-    private String startPosition(Integer cardNo, String nodeName, TuningModelnEntity tuningModelnEntity, KubernetesApiClient kubernetesApiClient) throws Exception {
-        log.info("K8S-GPU显卡插件占位任务-等待内部初始化分配");
-        TimeUnit.SECONDS.sleep(1);
-
-        KubernetesPodHandler kubernetesPodHandler = SpringHelper.getBean(KubernetesPodHandler.class);
-        KubernetesNameSpaceHandler kubernetesNameSpaceHandler = SpringHelper.getBean(KubernetesNameSpaceHandler.class);
-
-        String nginxPosit = MaasConst.NGINX_POSIT_NSPACE;
-        //确认命名空间
-        kubernetesNameSpaceHandler.createNameSpace(kubernetesApiClient, nginxPosit);
-        DeployAppVo deployAppVo = new DeployAppVo();
-        //只有POD支持 deployment是不支持Never的
-        deployAppVo.setRestartPolicy("Never");
-        deployAppVo.setAppCode(createPositionName(cardNo, nodeName));
-        deployAppVo.setImageName("registry.badou/badoullms/nginx:1.22.1");
-        deployAppVo.setNameSpace(nginxPosit);
-        deployAppVo.setSecretName("badouregistrykey");
-        deployAppVo.setReplicas(1);
-        deployAppVo.setKubernetesApiClient(kubernetesApiClient);
-        deployAppVo.setNodeName(nodeName);
-        Map<String, Quantity> limits = new HashMap<>();
-        limits.put("aliyun.com/gpu-mem", new Quantity("22"));
-        deployAppVo.setLimits(limits);
-
-        V1Pod podByParams = kubernetesPodHandler.createPodByParams(deployAppVo.getImageName(), kubernetesApiClient, 1, nginxPosit, deployAppVo.getAppCode(), deployAppVo);
-        if (podByParams == null) {
-            throw new Exception("多卡初始化分配失败!请联系管理员!");
-        }
-        return deployAppVo.getAppCode();
-    }
+//    private String startPosition(Integer cardNo, String nodeName, TuningModelnEntity tuningModelnEntity, KubernetesApiClient kubernetesApiClient) throws Exception {
+//        log.info("K8S-GPU显卡插件占位任务-等待内部初始化分配");
+//        TimeUnit.SECONDS.sleep(1);
+//
+//        KubernetesPodHandler kubernetesPodHandler = SpringHelper.getBean(KubernetesPodHandler.class);
+//        KubernetesNameSpaceHandler kubernetesNameSpaceHandler = SpringHelper.getBean(KubernetesNameSpaceHandler.class);
+//
+//        String nginxPosit = MaasConst.NGINX_POSIT_NSPACE;
+//        //确认命名空间
+//        kubernetesNameSpaceHandler.createNameSpace(kubernetesApiClient, nginxPosit,null);
+//        DeployAppVo deployAppVo = new DeployAppVo();
+//        //只有POD支持 deployment是不支持Never的
+//        deployAppVo.setRestartPolicy("Never");
+//        deployAppVo.setAppCode(createPositionName(cardNo, nodeName));
+//        deployAppVo.setImageName("registry.badou/badoullms/nginx:1.22.1");
+//        deployAppVo.setNameSpace(nginxPosit);
+//        deployAppVo.setSecretName("badouregistrykey");
+//        deployAppVo.setReplicas(1);
+//        deployAppVo.setKubernetesApiClient(kubernetesApiClient);
+//        deployAppVo.setNodeName(nodeName);
+//        Map<String, Quantity> limits = new HashMap<>();
+//        limits.put("aliyun.com/gpu-mem", new Quantity("22"));
+//        deployAppVo.setLimits(limits);
+//
+//        V1Pod podByParams = kubernetesPodHandler.createPodByParams(deployAppVo.getImageName(), kubernetesApiClient, 1, nginxPosit, deployAppVo.getAppCode(), deployAppVo);
+//        if (podByParams == null) {
+//            throw new Exception("多卡初始化分配失败!请联系管理员!");
+//        }
+//        return deployAppVo.getAppCode();
+//    }
 
     private String createPositionName(String cardNo, String nodeName) {
         return "nginx-card-" + nodeName + "-" + cardNo;
@@ -638,7 +625,11 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
                             for (String card : useCards) {
                                 //目前只支持到显卡级别 直接设置满的
                                 GpuCalcCardModel gpuCalcCardModel = gpuCalcCardModelMap.get(Integer.parseInt(card));
-                                gpuCalcCardModel.setCurrentVMemory(gpuCalcCardModel.getCurrentVMemory());
+                                try {
+                                    gpuCalcCardModel.setCurrentVMemory(gpuCalcCardModel.getCurrentVMemory());
+                                }catch (Exception e){
+                                    log.error("危险故障: 显卡与任务信息对不上.IP为"+hostIP+"的显卡"+card+"失效!");
+                                }
                             }
                         }
                     }
@@ -672,11 +663,6 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
         }
     }
 
-    public static void main(String[] args) {
-        List<ServerGpuEntity> currentNewCardStatus = new BaseGpuCalcHandler().getCurrentNewCardStatus("http://192.168.8.247:8998/v1/gpus/monitorInfo");
-        System.out.println(currentNewCardStatus);
-    }
-
     /**
      * 根据显卡集群服务器提供的显卡采集信息接口 获取当前目标服务器的显卡状态 如显卡数量、序号、当前/最大显存等信息
      * @param gpuMsgUrl 显卡服务器HTTP地址
@@ -689,6 +675,9 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
         List<ServerGpuEntity> results = new ArrayList<>();
         for (Object rowObj : data) {
             JSONObject row = (JSONObject) rowObj;
+            if (row.toString().contains("ERR")){
+                continue;
+            }
             JSONArray cardInfos = row.getJSONArray("card_info");
             ServerGpuEntity serverGpu = getServerGpu(cardInfos);
             serverGpu.setNameNum(serverGpu.getName()+"-"+serverGpu.getOrderNum());
@@ -710,6 +699,9 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
         Map<Integer,ServerGpuEntity> serverGpuEntityMap = new HashMap<>();
         for (Object rowObj : data) {
             JSONObject row = (JSONObject) rowObj;
+            if (row.toString().contains("ERR")){
+                continue;
+            }
             JSONArray cardInfos = row.getJSONArray("card_info");
             ServerGpuEntity gpuEntity = getServerGpu(cardInfos);
             serverGpuEntityMap.put(gpuEntity.getOrderNum(),gpuEntity);
@@ -797,7 +789,6 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
             gpuEntity.setOrderNum(cardInfos.getInteger(0));
             gpuEntity.setType(cardInfos.getString(2));
             gpuEntity.setName(cardInfos.getString(1));
-
             gpuEntity.setFanSpeedPer(Integer.parseInt(cardInfos.getString(4).equals("N/A")?"0":cardInfos.getString(4).replace("%", "")));
             gpuEntity.setTemperature(Double.parseDouble(cardInfos.getString(5).replace("C", "")));
             gpuEntity.setPerformanceStatus(Integer.parseInt(cardInfos.getString(6).replace("P", "")));
@@ -822,10 +813,14 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
      * @return 采集显卡结
      *     }果
      */
+    @Override
     public Map<Integer, GpuCalcCardModel> getCurrentCardStatus(String gpuMsgUrl) {
+        if (!gpuMsgUrl.contains("/v1/gpus/monitorInfo")){
+            gpuMsgUrl+="/v1/gpus/monitorInfo";
+        }
         // 创建带超时配置的POST请求
         HttpRequest postRequest = HttpUtil.createPost(gpuMsgUrl)
-                .timeout(10000); // 设置总超时时间1秒（包含连接+读取）
+                .timeout(20000); // 设置总超时时间1秒（包含连接+读取）
         JSONObject jsonObject = null;
         // 执行请求并获取响应
         try {
@@ -877,14 +872,13 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
 
                 gpuEntity.setUsageRate(Integer.parseInt(cardInfos.getString(11)
                         .replace("%","")));
-                System.out.println(gpuEntity);
             }
             if (cardInfos instanceof JSONArray) {
                 for (Object cardInfo : cardInfos) {
                     String cardInfoStr = cardInfo.toString();
                     if (cardInfoStr.contains("MiB")) {
                         String[] gpuMs = cardInfoStr.replace("MiB", "").split("/");
-                        GpuCalcCardModel calcModel = new GpuCalcCardModel(Integer.parseInt(cardId), Integer.parseInt(gpuMs[0]), Integer.parseInt(gpuMs[1]));
+                        GpuCalcCardModel calcModel = new GpuCalcCardModel(Integer.parseInt(cardId), Integer.parseInt(gpuMs[0]), Integer.parseInt(gpuMs[1]),cardInfos.getString(1));
                         log.info(calcModel.toString());
                         gpuCalcCardModels.put(calcModel.getOrderNo(), calcModel);
                     }
@@ -892,6 +886,40 @@ public class BaseGpuCalcHandler implements GpuCalcHandler {
             }
         }
         return gpuCalcCardModels;
+    }
+
+    @Override
+        public List<MultipleServersConfig> coverToServerCard(String serverId, Integer startNeedGpum, String customGpuCardName, String customGpuCard) {
+        List<MultipleServersConfig> multipleServersConfigs = new ArrayList<>();
+        //2080-0,2080-3
+        if (StringUtils.isNotBlank(customGpuCardName)){
+            MultipleServersConfig multipleServersConfig = new MultipleServersConfig();
+            multipleServersConfigs.add(multipleServersConfig);
+            multipleServersConfig.setK8sServerConfEntity(SpringHelper.getBean(IK8sServerConfService.class).find(serverId));
+            multipleServersConfig.setCalcDoneFlag(true);
+            multipleServersConfig.setNeedGpuNum(startNeedGpum);
+
+            String[] cards = customGpuCardName.split(",");
+            String[] gpuCaches = customGpuCard.split(",");
+            for (int i = 0;i<cards.length;i++){
+                String[] split = cards[i].split("-");
+                String[] gpuCache = gpuCaches[i].split("=")[1].split("-");
+                if (split.length == 2){
+                    String cardNo = split[1];
+                    int cardNoInt = Integer.parseInt(cardNo);
+//                    Integer orderNo, Integer currentVMemory, Integer maxVMemory,String name
+                    GpuCalcCardModel gpuCalcCardModel = new GpuCalcCardModel(cardNoInt,Integer.parseInt(gpuCache[0]),Integer.parseInt(gpuCache[1]),split[0]);
+                    multipleServersConfig.getCanGpuCardNoMap().put(cardNoInt,gpuCalcCardModel);
+                    multipleServersConfig.getGpuCalcCardModels().put(cardNoInt,gpuCalcCardModel);
+                    if (i < cards.length-1){
+                        multipleServersConfig.setCanGpuCardNos(multipleServersConfig.getCanGpuCardNos()+cardNo+",");
+                    }else {
+                        multipleServersConfig.setCanGpuCardNos(multipleServersConfig.getCanGpuCardNos()+cardNo);
+                    }
+                }
+            }
+        }
+        return multipleServersConfigs;
     }
 
 }

@@ -82,6 +82,16 @@ public class ModelAppListAction extends BaseCommonListAction {
         }
     }
 
+    @PostMapping
+    public JsonReturnBean getModelAddress(String id) {
+        try {
+            ModelAppEntity modelAppEntity = modelAppService.find(id);
+            return JsonResultUtil.success("http://"+modelAppEntity.getTotalApiPath());
+        }catch (Exception e){
+            return JsonResultUtil.errorMsg("加载模型信息失败");
+        }
+    }
+
     @Override
     protected void exeAfterList() {
         //设置累计运行时间

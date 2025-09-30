@@ -19,6 +19,13 @@ public class MaasConst {
     public static final String TUN_PLAN_NAME = "微调任务";
     //任务分类名称-模型部署
     public static final String MODEL_APP_NAME = "模型部署任务";
+    //K8S POD状态 镜像拉取失败字符串
+    //镜像信息错误
+    public static final String K8S_POD_ERRIMAGEPULL = "ErrImagePull";
+    //下载镜像失败
+    public static final String K8S_POD_IMAGEPULLBACKOFF = "ImagePullBackOff";
+    //无效的镜像名
+    public static final String K8S_POD_INVALIDIMAGENAME = "InvalidImageName";
     //K8S POD状态 运行字符串
     public static final String K8S_POD_RUNNING = "Running";
     //K8S POD状态 完成字符串
@@ -77,6 +84,8 @@ public class MaasConst {
     public static final String OPEN_AUTO_DELETE = "OPEN_AUTO_DELETE";
     //模型任务状态-数据字典
     public static final String DIC_MODEL_STATUS = "MODEL_STATUS";
+    //VLLM版本-数据字典
+    public static final String DIC_VLLM_VERSION = "VLLM_IMAGE_VERSION";
     //模型运行状态-数据字典
     public static final String DIC_MODEL_RUN_STATUS = "MODEL_RUN_STATUS";
     //模型上下架状态
@@ -151,6 +160,8 @@ public class MaasConst {
     public static final Integer TUN_PLAN_TYPE_PTTRAIN = 0;
     //微调类型-指令监督
     public static Integer TUN_PLAN_TYPE_SFT = 1;
+    //微调类型-基础字典
+    public static String DIC_PLAN_DO_WAY = "PLAN_DO_WAY";
     //多模态对话 base64图片参数固定前缀
     public static final String MULIT_BASE64_IMAGE_PREFIX = "data:image;base64,";
     //连接到其他平台的AI对话字典
@@ -175,11 +186,17 @@ public class MaasConst {
     public static final String PIPELINE_PARALLEL_SIZE = "--pipeline-parallel-size";
     //默认的Cuda目录
     public static final String CUDA_HOME = "/home/servers/cuda";
+    //默认的Cuda_Tool目录
+    public static final String[] CUDA_TOOL_PATH = new String[]{"bin/nvcc","bin/ptxas"};
     //执行配置Yaml配置路径开始
     //模型下载Nginx-Yaml配置路径
     public static final String DOWNLOAD_NGINX_PATH = "kubernetes\\downloadnginx\\downloadnginx.yaml".replace("\\",System.getProperty("file.separator"));;
     //ModelScope下载模型-Yaml配置路径
     public static final String DOWN_MODELSCOPE_PATH = "kubernetes\\downloadnginx\\downmodelscope.yaml".replace("\\",System.getProperty("file.separator"));;
+
+    //模型仓库 类型 字典值 其他
+    public static final Integer MODEL_TYPE_OTHER = 999;
+
     //执行配置Yaml配置路径结束
     /**
      * 构建与AI对话时,base64格式的图片
@@ -233,6 +250,10 @@ public class MaasConst {
 
     public static String buildModelOutPath(TuningModelnEntity tuningModelnEntity){
         return buildWorkPath(tuningModelnEntity)+"/"+tuningModelnEntity.getCreateDir();
+    }
+
+    public static String buildMergedModelOutPath(TuningModelnEntity tuningModelnEntity){
+        return buildWorkPath(tuningModelnEntity)+"/output/"+tuningModelnEntity.getCreateDir()+"/merged_model";
     }
 
     public static String getTuningAllName(String frame,String modelName){

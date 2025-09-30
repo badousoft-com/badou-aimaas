@@ -27,9 +27,9 @@ import com.badou.project.exception.DataEmptyException;
 import com.badou.project.exception.DataValidException;
 import com.badou.project.gpucalc.BaseGpuCalcHandler;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
-import com.badou.project.kubernetes.handler.KubernetesExecHandler;
 import com.badou.project.kubernetes.handler.KubernetesPodHandler;
 import com.badou.project.kubernetes.handler.KubernetesServiceHandler;
+import com.badou.project.kubernetes.handler.impl.KubernetesExecHandlerImpl;
 import com.badou.project.kubernetes.util.StringHandlerUtil;
 import com.badou.project.kubernetes.vo.ProcessStatusVo;
 import com.badou.project.maas.MaasConst;
@@ -85,8 +85,6 @@ public class ModelAppServiceImpl extends BaseSpringService<ModelAppEntity, Seria
     private IModelWarehouseService modelWarehouseService;
     @Autowired
     private BaseGpuCalcHandler baseGpuCalcHandler;
-    @Autowired
-    private KubernetesExecHandler kubernetesExecHandler;
 
     @Autowired
     public void setModelAppDAO(IModelAppDAO modelAppDAO) {
@@ -426,9 +424,8 @@ public class ModelAppServiceImpl extends BaseSpringService<ModelAppEntity, Seria
     }
 
     @Override
-    public Object loadApiMsg(String id) {
-        ModelAppEntity modelAppEntity = modelAppDAO.find(id);
-        try {
+    public Object loadApiMsg(String id) throws DataEmptyException, DataValidException {
+            ModelAppEntity modelAppEntity = modelAppDAO.find(id);
             String paramsDicName = MaasConst.MODEL_API_PARAMS_DIC;
 
             String modelType = DictionaryLib.getItemCodeByItemValue("MODEL_TYPE", modelAppEntity.getType() + "");
@@ -445,7 +442,8 @@ public class ModelAppServiceImpl extends BaseSpringService<ModelAppEntity, Seria
             JSONObject apiMsg = new JSONObject();
             DictionaryCacheObject dictionaryByCode = DictionaryLib.getDictionaryByCode(paramsDicName);
             if (dictionaryByCode == null || dictionaryByCode.getItems().size() == 0){
-                throw new DataValidException("未设置实际执行参数!");
+                String modelTypeDesc = DictionaryLib.getItemName("MODEL_TYPE", modelAppEntity.getType() + "");
+                throw new DataValidException("类型为"+modelTypeDesc+"未设置可用接口参数.请变更为其他有效的类型如语言模型LLM或联系管理员!");
             }
 
             List<DictionaryItemCacheObject> items = dictionaryByCode.getItems();
@@ -480,10 +478,6 @@ public class ModelAppServiceImpl extends BaseSpringService<ModelAppEntity, Seria
             apiMsg.put("responseTitle","响应例子");
             apiMsg.put("responseContnet",buildTemplateByJson(JSONObject.parseObject(response)));
             return apiMsg;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "服务异常!请联系系统管理员!";
-        }
     }
 
     private String buildTemplateByJson(JSONObject jsonObject){
@@ -571,10 +565,7 @@ public class ModelAppServiceImpl extends BaseSpringService<ModelAppEntity, Seria
     @Override
     public String stopApp(String id, boolean deleteFlag,String customMsg) {
         ModelAppEntity modelAppEntity = baseDAO.find(id);
-//        JsonReturnBean platformToken = aiLlmConfigService.getPlatformToken();
-//        if (platformToken == null || !platformToken.isHasOk()){
-//            return "授权获取失败!请联系管理员!";
-//        }
+
         if (Objects.isNull(modelAppEntity)) {
             return "无效的数据";
         }
@@ -607,7 +598,7 @@ public class ModelAppServiceImpl extends BaseSpringService<ModelAppEntity, Seria
                 return "无效的任务!请联系管理员!";
             }
             //移除之前 获取该任务的显卡资源
-            Map<Integer, ServerGpuEntity> currentNewCardStatusMap = baseGpuCalcHandler.getCurrentNewCardStatusMap(defaultClient.getServer().getGpuMsgUrl());
+            Map<Integer, ServerGpuEntity> currentNewCardStatusMap = baseGpuCalcHandler.getCurrentNewCardStatusMap(defaultClient.getServer().getGpuMsgUrl()+"/v1/gpus/monitorInfo");
             if (currentNewCardStatusMap.size() == 0){
                 return "服务器异常!请联系管理员!";
             }
@@ -625,11 +616,11 @@ public class ModelAppServiceImpl extends BaseSpringService<ModelAppEntity, Seria
                 List<V1Pod> podByLabelApp = kubernetesPodHandler.getPodByLabelApp(defaultClient, modelAppNsapce, modelServerId);
                 for (V1Pod v1Pod : podByLabelApp) {
                     try {
-                        List<ProcessStatusVo> podProcessStatus = kubernetesExecHandler.getPodProcessStatus(v1Pod.getMetadata().getName(),
+                        List<ProcessStatusVo> podProcessStatus = new KubernetesExecHandlerImpl().getPodProcessStatus(v1Pod.getMetadata().getName(),
                                 modelAppNsapce,defaultClient ,"python3");
                         podProcessStatus.forEach(e->{
                             try {
-                                kubernetesExecHandler.execCommandOnce(v1Pod.getMetadata().getName(),modelAppNsapce,defaultClient,new String[]{"kill","-9",e.getPid()+""});
+                                new KubernetesExecHandlerImpl().execCommandOnce(v1Pod.getMetadata().getName(),modelAppNsapce,defaultClient,new String[]{"kill","-9",e.getPid()+""});
                             } catch (IOException ex) {
                                 throw new RuntimeException(ex);
                             } catch (ApiException ex) {
@@ -685,19 +676,6 @@ public class ModelAppServiceImpl extends BaseSpringService<ModelAppEntity, Seria
                     modelAppEntity.setMsg(kubernetesPodHandler.readPodAllLog(defaultClient,modelAppNsapce,v1PodList.getItems().get(0).getMetadata().getName(),350)+"\n"+customMsg);
                     modelAppEntity.setStatus(MaasConst.DOPLAN_FAIL_STATUS);
                 }
-                //检查是否已经关联到了AIPAAS 如果有 则调用对方接口移除
-//                if (StringUtils.isNoneBlank(modelAppEntity.getPlatformModelId())){
-//                    Boolean aiLlmConfig = aiLlmConfigService.deleteRow(modelAppEntity.getPlatformModelId(), "ai_llm_config", platformToken.getMessage());
-//                    if (aiLlmConfig){
-//                        modelAppEntity.setPlatformModelId(null);
-//                    }
-//                }
-//                if (StringUtils.isNoneBlank(modelAppEntity.getPlatformAssistantId())){
-//                    Boolean myAssistant = aiLlmConfigService.deleteRow(modelAppEntity.getPlatformAssistantId(), "my_assistant", platformToken.getMessage());
-//                    if (myAssistant){
-//                        modelAppEntity.setPlatformAssistantId(null);
-//                    }
-//                }
                 update(modelAppEntity);
                 return null;
             }

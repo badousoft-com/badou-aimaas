@@ -1,5 +1,6 @@
 package com.badou.project.gpucalc;
 
+import com.badou.project.gpucalc.model.MultipleServersConfig;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.maas.trainplan.model.TrainPlanEntity;
 import com.badou.project.maas.tuningmodeln.model.TuningModelnEntity;
@@ -8,6 +9,7 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import netscape.javascript.JSObject;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 计算GPU分配信息的处理器
@@ -67,4 +69,20 @@ public interface GpuCalcHandler {
      */
     List<Integer> removeTunPlanTargetCard(TrainPlanEntity trainPlanEntity,TuningModelnEntity tuningModelnEntity) throws Exception;
 
+    /**
+     * 根据GPU地址采集GPU信息
+     * @param gpuMsgUrl
+     * @return
+     */
+    Map<Integer, GpuCalcCardModel> getCurrentCardStatus(String gpuMsgUrl);
+
+    /**
+     * 将自定义显卡 转成实际的显卡执行对象
+     * @param serverId 服务器主键
+     * @param startNeedGpum 启动需要显存
+     * @param customGpuCardName 自定义显卡名称
+     * @param customGpuCard 自定义显卡
+     * @return
+     */
+    List<MultipleServersConfig> coverToServerCard(String serverId,Integer startNeedGpum,String customGpuCardName,String customGpuCard);
 }

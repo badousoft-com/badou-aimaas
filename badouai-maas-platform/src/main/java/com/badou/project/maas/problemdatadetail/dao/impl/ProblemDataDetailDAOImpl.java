@@ -8,14 +8,6 @@ import com.badou.brms.base.support.page.model.Pagelet;
 import com.badou.brms.dboperation.query.QueryCriterion;
 import com.badou.brms.dboperation.query.QueryOperSymbolEnum;
 import com.badou.brms.dboperation.query.support.QueryHibernatePlaceholderParam;
-import com.badou.project.common.webparams.handler.WebParamHandler;
-import com.badou.project.maas.problemdata.model.ProblemDataEntity;
-import io.swagger.models.auth.In;
-import org.hibernate.Query;
-import org.hibernate.SQLQuery;
-import org.hibernate.transform.ResultTransformer;
-import org.hibernate.transform.Transformers;
-import org.hibernate.type.Type;
 import org.springframework.stereotype.Repository;
 
 import com.badou.brms.base.support.hibernate.BaseHibernateDAO;

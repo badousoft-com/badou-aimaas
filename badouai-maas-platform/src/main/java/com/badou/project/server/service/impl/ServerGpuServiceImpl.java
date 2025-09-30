@@ -54,7 +54,7 @@ public class ServerGpuServiceImpl extends BaseSpringService<ServerGpuEntity, Ser
 	public List<ServerGpuEntity> getCardData(String serverId) {
 		K8sServerConfEntity k8sCustomServer = ik8sServerConfService.getK8sCustomServer(serverId);
 		//获取显卡列表
-		List<ServerGpuEntity> currentNewCardStatus = new BaseGpuCalcHandler().getCurrentNewCardStatus(k8sCustomServer.getGpuMsgUrl());
+		List<ServerGpuEntity> currentNewCardStatus = new BaseGpuCalcHandler().getCurrentNewCardStatus(k8sCustomServer.getGpuMsgUrl()+"/v1/gpus/monitorInfo");
 		return currentNewCardStatus;
 	}
 

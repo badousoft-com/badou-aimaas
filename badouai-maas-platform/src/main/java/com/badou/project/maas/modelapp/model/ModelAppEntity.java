@@ -4,7 +4,6 @@ import com.badou.brms.base.support.hibernate.used.AppBaseEntity;
 import com.badou.project.GlobalConsts;
 import com.badou.project.maas.common.FileControllerService;
 import com.badou.tools.common.util.StringUtils;
-import io.swagger.models.auth.In;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date; 
@@ -225,11 +224,11 @@ public class ModelAppEntity extends AppBaseEntity {
     }
 
     public String getTotalApiPath() {
-        return FileControllerService.getCacheK8sClient(getServerId()).getServer().getExposeAddress() + ":" +port+getApiPath();
+        return FileControllerService.getCacheK8sClient(getServerId()).getServer().getAddress() + ":" +port+getApiPath();
     }
 
     public String getTotalModelPath() {
-        return FileControllerService.getCacheK8sClient(getServerId()).getServer().getExposeAddress() + ":" +port+"/v1/models";
+        return FileControllerService.getCacheK8sClient(getServerId()).getServer().getAddress() + ":" +port+"/v1/models";
     }
 
     public String getApiPath(){

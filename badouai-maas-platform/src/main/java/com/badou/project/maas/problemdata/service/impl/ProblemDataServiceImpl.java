@@ -13,6 +13,7 @@ import com.badou.brms.dboperation.query.QueryOperSymbolEnum;
 import com.badou.brms.dboperation.query.support.QueryHibernatePlaceholderParam;
 import com.badou.core.runtime.thread.local.LogonCertificateHolder;
 import com.badou.project.GlobalConsts;
+import com.badou.project.common.webparams.util.DateUtil;
 import com.badou.project.kubernetes.util.StringHandlerUtil;
 import com.badou.project.maas.MaasConst;
 import com.badou.project.maas.problemdatadetail.model.ProblemDataDetailEntity;
@@ -31,6 +32,7 @@ import com.badou.brms.base.support.spring.BaseSpringService;
 import com.badou.project.maas.problemdata.dao.IProblemDataDAO;
 import com.badou.project.maas.problemdata.model.ProblemDataEntity;
 import com.badou.project.maas.problemdata.service.IProblemDataService;
+import sun.rmi.runtime.Log;
 
 
 /**
@@ -126,7 +128,7 @@ public class ProblemDataServiceImpl extends BaseSpringService<ProblemDataEntity,
 			i++;
 			try {
 //				JSONObject jsonObject = apiHelperService.talkWithAi("pretrain-cover-sft", row, "3bc130ff79b4469aa86616e5b9c26e99");
-				JSONObject jsonObject = new JSONObject();
+				JSONObject jsonObject = null;
 				if(jsonObject.getJSONObject("bean")!=null){
 					String replyContent = jsonObject.getJSONObject("bean").getString("replyContent");
 					JSONArray jsonArray = JSONArray.parseArray(StringHandlerUtil.checkAiJsonArray(replyContent));

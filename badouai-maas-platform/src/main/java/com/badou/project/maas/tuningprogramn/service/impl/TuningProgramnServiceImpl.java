@@ -19,10 +19,12 @@ import com.badou.project.GlobalConsts;
 import com.badou.project.common.webparams.handler.WebParamHandler;
 import com.badou.project.common.webparams.util.JsonResultUtil;
 import com.badou.project.exception.DataEmptyException;
+import com.badou.project.exception.DataErrorException;
 import com.badou.project.exception.DataValidException;
 import com.badou.project.gpucalc.BaseGpuCalcHandler;
 import com.badou.project.gpucalc.GpuCalcFactory;
 import com.badou.project.gpucalc.GpuCalcHandler;
+import com.badou.project.gpucalc.model.MultipleServersConfig;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.kubernetes.handler.KubernetesPodHandler;
 import com.badou.project.maas.MaasConst;
@@ -32,6 +34,8 @@ import com.badou.project.maas.evaluationinstan.service.IEvaluationTFileService;
 import com.badou.project.maas.modeevalqu.model.TunModeEvalQuEntity;
 import com.badou.project.maas.modelwarehouse.model.ModelWarehouseEntity;
 import com.badou.project.maas.modelwarehouse.service.IModelWarehouseService;
+import com.badou.project.maas.registryaddress.model.RegistryAddressEntity;
+import com.badou.project.maas.registryaddress.service.IRegistryAddressService;
 import com.badou.project.maas.trainplan.model.TrainPlanEntity;
 import com.badou.project.maas.trainplan.service.ITrainPlanService;
 import com.badou.project.maas.tuningevaluationn.model.TuningEvaluationnEntity;
@@ -76,6 +80,8 @@ public class TuningProgramnServiceImpl extends BaseSpringService<TuningProgramnE
     private ITuningProgramnDAO tuningProgramnDAO;
     @Autowired
     private IModelWarehouseService modelWarehouseService;
+    @Autowired
+    private BaseGpuCalcHandler baseGpuCalcHandler;
 
     @Autowired
     public void setTuningProgramnDAO(ITuningProgramnDAO tuningProgramnDAO) {
@@ -105,9 +111,17 @@ public class TuningProgramnServiceImpl extends BaseSpringService<TuningProgramnE
     private ITuningProgramQueueService tuningProgramQueueService;
     @Autowired
     private IEvaluationTFileService evaluationTFileService;
+    @Autowired
+    private IRegistryAddressService registryAddressService;
 
     @Override
     public boolean startPlan(Map<String, String[]> trainPlanEntityMap, String id) throws Exception {
+        //正式提交任务前 先检查是否已配置了默认的镜像仓库
+        RegistryAddressEntity defaultRegistryAddress = registryAddressService.getDefaultRegistryAddress();
+        if (defaultRegistryAddress == null){
+            throw new DataValidException("未配置默认镜像仓库!请前往资源管理->镜像仓库信息 配置");
+        }
+
         TuningProgramnEntity tuningProgramnEntity = tuningProgramnDAO.find(id);
         QueryCriterion queryCriterion = null;
         String[] tunPlans = tuningProgramnEntity.getTuningPlanId().split(",");
@@ -146,8 +160,10 @@ public class TuningProgramnServiceImpl extends BaseSpringService<TuningProgramnE
             queryCriterion.addParam(new QueryHibernatePlaceholderParam("doStatus", GlobalConsts.ZERO,GlobalConsts.ONE,QueryOperSymbolEnum.between));
             List<TuningModelnEntity> tuningModelnEntities = tuningModelnService.find(queryCriterion);
             if (tuningModelnEntities.size() > GlobalConsts.ZERO){
-                throw new Exception(trainPlanEntity.getName()+"方案存在运行!请先停止！r");
+                throw new Exception(trainPlanEntity.getName()+"方案正在运行..请先中止");
             }
+            ModelWarehouseEntity modelWarehouseEntity = modelWarehouseService.find(trainPlanEntity.getModelId());
+            String modelPath = modelWarehouseEntity.getPath();
             //20250429 lm 增加多机多卡 多服务器的支持
             String[] serverIds = serverId.split(",");
             if (serverIds.length>GlobalConsts.ONE){
@@ -158,6 +174,11 @@ public class TuningProgramnServiceImpl extends BaseSpringService<TuningProgramnE
                 }
                 for (String serverId1:serverIds){
                     KubernetesApiClient defaultClient = FileControllerService.getCustomClient(serverId1);
+                    //检查当前服务器是否有该模型
+                    JSONObject jsonObject = fileControllerService.execModelCommand(defaultClient.getServer(), new String[]{"ls",modelPath});
+                    if (jsonObject.getString("msg").contains("cannot access")){
+                        throw new DataValidException("服务器"+defaultClient.getServer().getRemark()+"不存在"+modelWarehouseEntity.getModelName()+"模型!请联系管理员或修正服务器的模型扫描目录");
+                    }
                     V1Pod pod = null;
                     try {
                         pod  = kubernetesPodHandler.getPod(defaultClient, MaasConst.TRIAN_PLAN_NSPACE, trainPlanEntity.getCode());
@@ -166,12 +187,18 @@ public class TuningProgramnServiceImpl extends BaseSpringService<TuningProgramnE
                         throw new Exception("服务器异常请联系管理员!");
                     }
                     if(Objects.nonNull(pod)){
-                        throw new Exception(trainPlanEntity.getName()+"方案存在运行!请先停止！r");
+                        throw new Exception(trainPlanEntity.getName()+"方案正在运行..请先中止");
                     }
                 }
                 continue;
             }
             KubernetesApiClient defaultClient = FileControllerService.getCustomClient(serverId);
+            //检查当前服务器是否有该模型
+            JSONObject jsonObject = fileControllerService.execModelCommand(defaultClient.getServer(), new String[]{"ls",modelPath});
+            if (jsonObject.getString("msg").contains("cannot access")){
+                logger.info("异常路径"+modelPath);
+                throw new DataValidException("服务器"+defaultClient.getServer().getRemark()+"不存在"+modelWarehouseEntity.getModelName()+"模型!请联系管理员或修正服务器的模型扫描目录");
+            }
             V1Pod pod = null;
             try {
                 pod  = kubernetesPodHandler.getPod(defaultClient, MaasConst.TRIAN_PLAN_NSPACE, trainPlanEntity.getCode());
@@ -180,7 +207,7 @@ public class TuningProgramnServiceImpl extends BaseSpringService<TuningProgramnE
                 throw new Exception("服务器异常请联系管理员!");
             }
             if(Objects.nonNull(pod)){
-                throw new Exception(trainPlanEntity.getName()+"方案存在运行!请先停止！r");
+                throw new Exception(trainPlanEntity.getName()+"方案正在运行..请先中止");
             }
         }
 
@@ -188,7 +215,7 @@ public class TuningProgramnServiceImpl extends BaseSpringService<TuningProgramnE
             if (JsonResultUtil.isNull(trainPlanEntity.getMode())){
                 throw new Exception("请设置有效的微调方案类型");
             }
-            if (trainPlanEntity.getPreGpucache() == 0){
+            if (StringUtils.isEmpty(trainPlanEntity.getCustomGpuCard()) && trainPlanEntity.getPreGpucache() == 0){
                 throw new Exception("微调方案"+trainPlanEntity.getName()+"未配置对应模型框架的预估GPU显存配置!请联系管理员!");
             }
             //偏好数据格式 不能和奖励模型混在一起
@@ -300,8 +327,14 @@ public class TuningProgramnServiceImpl extends BaseSpringService<TuningProgramnE
                     throw new DataValidException(tuningModelnEntity.getModelName() + "未设置模板参数！请联系管理员！");
                 }
             }
-            //为本次任务分配显卡
-            new BaseGpuCalcHandler().calcTargetCardAndDeploy(trainPlanEntity,tuningModelnEntity);
+            //如果有自定义显卡配置 则优先使用自定义显卡配置 不再自动计算
+            if (StringUtils.isNotBlank(trainPlanEntity.getCustomGpuCard())){
+                tuningModelnEntity.setMultipleServersConfigs(baseGpuCalcHandler.coverToServerCard(trainPlanEntity.getServerId(), 22,
+                        trainPlanEntity.getCustomGpuCardName(), trainPlanEntity.getCustomGpuCard()));
+            } else {
+                //为本次任务分配显卡 默认是自动的
+                new BaseGpuCalcHandler().calcTargetCardAndDeploy(trainPlanEntity,tuningModelnEntity);
+            }
 
             if (tuningModelnEntity.getMultipleServersConfigs().size() == 0){
                 throw new Exception("分配显卡异常!请联系管理员!");

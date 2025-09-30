@@ -9,7 +9,7 @@
 	<packaging>war</packaging>
 
 	<name>badouai-maas-platform</name>
-	<description>八斗AI-Maas大模型管理平台 </description>
+	<description>AI-Maas大模型管理平台</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -22,206 +22,94 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
-		<badouFramework.version>4.1.0.dev.20230619</badouFramework.version>
-		<bdPlugin.appengine.version>4.1.0.dev.20230619</bdPlugin.appengine.version>
-		<bdPlugin.report.version>4.0.2.dev.1019</bdPlugin.report.version>
-		<bdPlugin.message.version>4.1.0.dev.20230619</bdPlugin.message.version>
-		<bdPlugin.uniapp.manager.version>4.0.2.dev.0612</bdPlugin.uniapp.manager.version>
-		<bdPlugin.cas.version>4.1.0.dev.20230619</bdPlugin.cas.version>
-		<bdPlugin.area.version>4.1.0.dev.20230619</bdPlugin.area.version>
+		<badouFramework.version>4.1</badouFramework.version>
 		<okhttp3.version>4.9.1</okhttp3.version>
-		<bdPlugin.cas.version>4.0.3.dev.20230325</bdPlugin.cas.version>
 		<hibernate.version>5.1.17.Final</hibernate.version>
 		<checkstyle.config.location>check-style.xml</checkstyle.config.location>
 		<kubernetes.api.version>13.0.0</kubernetes.api.version>
+		<!-- apache -->
+		<poi.version>3.15</poi.version>
 	</properties>
 
 	<profiles>
-		<!-- 开发环境 -->
 		<profile>
 			<id>dev</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
 			</activation>
 			<properties>
-				<!-- server相关配置 -->
 				<maven.server.port>8089</maven.server.port>
 				<maven.server.session.timeout>3600</maven.server.session.timeout>
 				<maven.tomcat.uriEncoding>UTF-8</maven.tomcat.uriEncoding>
-				<!-- 跨域配置 -->
-				<maven.spring.cross.allow>http://localhost:8000,*,http://localhost:8080</maven.spring.cross.allow>
-				<!-- jasypt加密秘钥 -->
-				<maven.jasypt.encryptor.password>badou_salt</maven.jasypt.encryptor.password>
-				<!-- 数据库配置信息 -->
+				<maven.spring.cross.allow>http://localhost:8000,*,http://localhost:8089</maven.spring.cross.allow>
+				<maven.jasypt.encryptor.password>aimaas</maven.jasypt.encryptor.password>
 				<maven.db.jdbc.connection.driver><![CDATA[com.mysql.jdbc.Driver]]></maven.db.jdbc.connection.driver>
-				<!-- 若需要加密则应该写成 ‘ENC(加密后字符串)’ -->
-				<!--				<maven.db.jdbc.connection.url><![CDATA[jdbc:mysql://192.168.8.244:3306/badouai_maas_prod?characterEncoding=UTF-8&useSSL=false]]></maven.db.jdbc.connection.url>-->
 				<maven.db.jdbc.connection.url><![CDATA[jdbc:mysql://192.168.1.240:30002/badouaimaas_open?characterEncoding=UTF-8&useSSL=false]]></maven.db.jdbc.connection.url>
 				<maven.db.jdbc.username>badouai-maas</maven.db.jdbc.username>
 				<maven.db.jdbc.password><![CDATA[kmoj%kIl21]]></maven.db.jdbc.password>
-				<!--				<maven.db.jdbc.username>badouai_maas</maven.db.jdbc.username>-->
-				<!--				<maven.db.jdbc.password><![CDATA[kmoj%kIl21]]></maven.db.jdbc.password>-->
 				<maven.hibernate.cache.use_second_level_cache><![CDATA[false]]></maven.hibernate.cache.use_second_level_cache>
 				<maven.hibernate.show_sql><![CDATA[true]]></maven.hibernate.show_sql>
 				<maven.hibernate.mappingDirectory><![CDATA[/WEB-INF/hibernate]]></maven.hibernate.mappingDirectory>
 				<maven.hibernate.dialect><![CDATA[org.hibernate.dialect.MySQL5InnoDBDialect]]></maven.hibernate.dialect>
 				<maven.db.maximumConnectionCount><![CDATA[10]]></maven.db.maximumConnectionCount>
 				<maven.db.minimumConnectionCount><![CDATA[5]]></maven.db.minimumConnectionCount>
-				<!-- 是否启用debugger模式 -->
-				<maven.badou.useDebugger.enabled>false</maven.badou.useDebugger.enabled>
-				<!-- 是否启用API安全校验 -->
 				<maven.badou.request.enabled>false</maven.badou.request.enabled>
-				<!-- 请求合理时间间隔（单位：秒） -->
 				<maven.badou.request.legalTime>60</maven.badou.request.legalTime>
-				<!-- OAuth2 认证中心地址 -->
 				<maven.badou.oauth2.auth-center-url>http://localhost:8089</maven.badou.oauth2.auth-center-url>
-				<!-- 公钥文件存放路径 -->
-				<maven.badou.rsa.publicKeyPath>E:/badouWork/backend/src/main/resources/secretKey/publicKey.txt</maven.badou.rsa.publicKeyPath>
-				<!-- 秘钥文件存放路径 -->
-				<maven.badou.rsa.privateKeyPath>E:/badouWork/backend/src/main/resources/secretKey/privateKey.txt</maven.badou.rsa.privateKeyPath>
-				<!-- SpringCache缓存默认有效时长（单位：分） -->
+				<maven.badou.rsa.publicKeyPath>/tmp/secretKey/publicKey.txt</maven.badou.rsa.publicKeyPath>
+				<maven.badou.rsa.privateKeyPath>/tmp/secretKey/privateKey.txt</maven.badou.rsa.privateKeyPath>
 				<maven.spring.cache.default.timeout>60</maven.spring.cache.default.timeout>
-				<!-- ActiveMq 相关配置 -->
-				<maven.activemq.url>tcp://localhost:61616</maven.activemq.url>
-				<maven.activemq.username>admin</maven.activemq.username>
-				<maven.activemq.password>admin</maven.activemq.password>
-				<maven.activemq.pool.enabled>true</maven.activemq.pool.enabled>
-				<maven.activemq.packages.trustAll>true</maven.activemq.packages.trustAll>
-				<maven.jms.pubSubDomain>true</maven.jms.pubSubDomain>
-				<!-- memcached 配置信息 实际应用中与redis配置二选一 但是配置必须存在-->
-				<maven.memcached.servers><![CDATA[localhost:11221]]></maven.memcached.servers>
-				<maven.memcached.failover><![CDATA[true]]></maven.memcached.failover>
-				<maven.memcached.initConn><![CDATA[10]]></maven.memcached.initConn>
-				<maven.memcached.minConn><![CDATA[10]]></maven.memcached.minConn>
-				<maven.memcached.maxConn><![CDATA[1000]]></maven.memcached.maxConn>
-				<maven.memcached.maintSleep><![CDATA[30]]></maven.memcached.maintSleep>
-				<maven.memcached.nagle><![CDATA[false]]></maven.memcached.nagle>
-				<maven.memcached.socketTO><![CDATA[3000]]></maven.memcached.socketTO>
-				<maven.memcached.aliveCheck><![CDATA[true]]></maven.memcached.aliveCheck>
-				<!-- redis 配置信息 实际应用中与memcache配置二选一 但是配置必须存在-->
 				<maven.redis.servers><![CDATA[127.0.0.1]]></maven.redis.servers>
 				<maven.redis.port><![CDATA[6379]]></maven.redis.port>
 				<maven.redis.password><![CDATA[123456]]></maven.redis.password>
 				<maven.redis.database><![CDATA[4]]></maven.redis.database>
-				<!-- 文件上传地址 -->
-				<maven.attach.save.path><![CDATA[E:\develop\project\dattach]]></maven.attach.save.path>
-				<!--				<maven.attach.save.path><![CDATA[/Users/chenjiabao/Desktop/workspace/attach/init]]></maven.attach.save.path>-->
-				<!-- Spring相关配置 -->
-				<!-- Spring servlet相关配置 -->
+				<maven.attach.save.path><![CDATA[/tmp/attach]]></maven.attach.save.path>
 				<maven.spring.servlet.multipart.maxfilesize>300MB</maven.spring.servlet.multipart.maxfilesize>
 				<maven.spring.servlet.multipart.maxrequestsize>1600MB</maven.spring.servlet.multipart.maxrequestsize>
 				<maven.spring.servlet.multipart.enabled>true</maven.spring.servlet.multipart.enabled>
-				<!-- Spring jpa相关配置 -->
 				<maven.spring.jpa.database>MYSQL</maven.spring.jpa.database>
 				<maven.spring.jpa.showSql>true</maven.spring.jpa.showSql>
 				<maven.spring.jpa.databasePlatform>org.hibernate.dialect.MySQL5InnoDBDialect</maven.spring.jpa.databasePlatform>
-				<!-- JPA Hibernate 相关配置 -->
 				<maven.spring.jpa.hibernate.ddlAuto>none</maven.spring.jpa.hibernate.ddlAuto>
-				<!-- Spring 相关配置结束 -->
-				<!-- logging日志相关配置 -->
-				<!-- 是否开启操作日志记录 -->
 				<maven.logging.enabled>false</maven.logging.enabled>
-				<!-- 线程最大日志缓存数，当线程中日志缓存数量达到指定大小时就存储到数据库中 -->
 				<maven.logging.buffer.size>5</maven.logging.buffer.size>
-				<!-- 日志记录实体类路径 -->
 				<maven.logging.provider.class>com.badou.logs.syslog.model.SysLog</maven.logging.provider.class>
-				<!-- 日志文件存储路径 -->
-				<maven.logging.path>/home/ibadou/apache-tomcat-8.5.57/projectlogs</maven.logging.path>
-				<!-- com.badou包下打印日志  -->
+				<maven.logging.path>/tmp/</maven.logging.path>
 				<maven.logging.level.badou>info</maven.logging.level.badou>
-				<!-- 单个日志文件最大文件大小 -->
 				<maven.logging.file.maxSize>100MB</maven.logging.file.maxSize>
-				<!-- 最多保留多少天的日志 -->
 				<maven.logging.file.maxHistory>5</maven.logging.file.maxHistory>
-				<!-- 是否保存到文件服务器 -->
 				<maven.attach.save.to.server><![CDATA[false]]></maven.attach.save.to.server>
-				<!-- 阿里Druid连接池配置 -->
-				<!-- 初始化大小 -->
 				<maven.druid.initialSize>5</maven.druid.initialSize>
-				<!-- 最小连接数 -->
 				<maven.druid.minIdle>5</maven.druid.minIdle>
-				<!-- 最大活跃数 -->
 				<maven.druid.maxActive>300</maven.druid.maxActive>
-				<!-- 配置获取连接等待超时的时间 -->
 				<maven.druid.maxWait>60000</maven.druid.maxWait>
-				<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
 				<maven.druid.timeBetweenEvictionRunsMillis>60000</maven.druid.timeBetweenEvictionRunsMillis>
-				<!-- 指定一个空闲连接最少空闲多久后可被清除，单位是毫秒 -->
 				<maven.druid.minEvictableIdleTimeMillis>300000</maven.druid.minEvictableIdleTimeMillis>
-				<!-- ORACLE配置 -->
-				<!--<maven.druid.validationQuery>select 'x' FROM DUAL</maven.druid.validationQuery>-->
-				<!-- MYSQL配置 -->
 				<maven.druid.validationQuery>select 'x' FROM</maven.druid.validationQuery>
-				<!-- 当连接空闲时，是否执行连接测试 -->
 				<maven.druid.testWhileIdle>true</maven.druid.testWhileIdle>
-				<!-- 当从连接池借用连接时，是否测试该连接 -->
 				<maven.druid.testOnBorrow>false</maven.druid.testOnBorrow>
-				<!-- 在连接归还到连接池时是否测试该连接 -->
 				<maven.druid.testOnReturn>false</maven.druid.testOnReturn>
-				<!-- 配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙 -->
 				<maven.druid.filters>config,stat,slf4j</maven.druid.filters>
-				<!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
 				<maven.druid.poolPreparedStatements>true</maven.druid.poolPreparedStatements>
 				<maven.druid.maxPoolPreparedStatementPerConnectionSize>20</maven.druid.maxPoolPreparedStatementPerConnectionSize>
 				<maven.druid.maxOpenPreparedStatements>20</maven.druid.maxOpenPreparedStatements>
-				<!-- 通过connectProperties属性来打开mergeSql功能；慢SQL记录 -->
 				<maven.druid.connectionProperties>druid.stat.slowSqlMillis=200;druid.stat.logSlowSql=true;config.decrypt=false</maven.druid.connectionProperties>
-				<!-- 是否启用StatFilter -->
 				<maven.druid.webStatFilter.enabled>true</maven.druid.webStatFilter.enabled>
 				<maven.druid.webStatFilter.sessionStatEnable>true</maven.druid.webStatFilter.sessionStatEnable>
 				<maven.druid.webStatFilter.sessionStatMaxCount>10</maven.druid.webStatFilter.sessionStatMaxCount>
-				<!-- 是否启用StatViewServlet默认值true-->
 				<maven.druid.statViewServlet.enabled>true</maven.druid.statViewServlet.enabled>
 				<maven.druid.statViewServlet.resetEnable>true</maven.druid.statViewServlet.resetEnable>
-				<!-- 监控后台登录账户密码 -->
-				<maven.druid.statViewServlet.loginUsername>admin</maven.druid.statViewServlet.loginUsername>
-				<maven.druid.statViewServlet.loginpPassword>admin</maven.druid.statViewServlet.loginpPassword>
 				<project.final.name>${project.name}</project.final.name>
-				<!-- 云中心地址 -->
-				<maven.platform.url><![CDATA[http://cloud.badousoft.com/center/]]></maven.platform.url>
-				<!-- Spring Boot Admin Server的URL -->
-				<maven.springbootadmin.server.url>http://localhost:9999</maven.springbootadmin.server.url>
-				<!-- 本地的ip和项目端口 -->
-				<maven.springbootadmin.client.service-base-url>http://localhost:8080</maven.springbootadmin.client.service-base-url>
-				<!-- 是否启用Spring Boot Admin Client 开发环境不启用 -->
-				<maven.springbootadmin.client.enabled><![CDATA[false]]></maven.springbootadmin.client.enabled>
-				<!-- K8s-Master地址 -->
-				<maven.spring.kubernetes.master.address>192.168.1.240</maven.spring.kubernetes.master.address>
-				<!-- k8s-api访问端口 -->
-				<maven.spring.kubernetes.master.port>6443</maven.spring.kubernetes.master.port>
-				<!-- kubernetes公共镜像仓库地址 -->
-				<maven.spring.kubernetes.container.registry-address>registry.badou</maven.spring.kubernetes.container.registry-address>
-				<!-- kubernetes-ingress服务器允许上传的最大文件大小 -->
-				<maven.spring.kubernetes.config.fileLimitSize>500M</maven.spring.kubernetes.config.fileLimitSize>
-				<!-- 认证方式 默认是配置文件的方式 -->
-				<maven.spring.kubernetes.auth.type>configFile</maven.spring.kubernetes.auth.type>
-				<!-- 认证使用的内容 如果是token的方式,写的是token的具体内容 如果是文件 写的则是文件的相对路径-->
-				<maven.spring.kubernetes.auth.content>kubernetes/240-k8s-admin.conf</maven.spring.kubernetes.auth.content>
-				<!-- jenkins访问地址 -->
-				<maven.spring.jenkins.server.address>http://192.168.1.225:8080/jenkins/</maven.spring.jenkins.server.address>
-				<!-- jenkins用户和token信息 token生成参考jenkins用户token生成 -->
-				<maven.spring.jenkins.server.user>devopsadm</maven.spring.jenkins.server.user>
-				<maven.spring.jenkins.server.token>11f57b936de67a7ea8b269225796a5fd00</maven.spring.jenkins.server.token>
-				<maven.spring.jenkins.server.prefix>devops</maven.spring.jenkins.server.prefix>
-				<!-- sonarQube服务器地址 -->
-				<maven.spring.sonar.server.url>http://192.168.1.225:9186/sonar</maven.spring.sonar.server.url>
-				<!-- sonarqQube-api-token badousoft账户 -->
-				<maven.spring.sonar.server.token>6e77e6456be6d9cdab71b4d2670ea703c7edb6fe</maven.spring.sonar.server.token>
-				<!-- RabbitMQ -->
 				<maven.spring.rabbitmq.host>192.168.1.217</maven.spring.rabbitmq.host>
-				<!--				<maven.spring.rabbitmq.host>127.0.0.1</maven.spring.rabbitmq.host>-->
 				<maven.spring.rabbitmq.port>5672</maven.spring.rabbitmq.port>
 				<maven.spring.rabbitmq.username>rbamn</maven.spring.rabbitmq.username>
 				<maven.spring.rabbitmq.password>Rba_2021</maven.spring.rabbitmq.password>
-				<maven.spring.rabbitmq.modelapp.queue>maas_dev_modelapp_queue</maven.spring.rabbitmq.modelapp.queue>
-				<maven.spring.rabbitmq.plan.queue>maas_dev_plan_queue</maven.spring.rabbitmq.plan.queue>
-				<maven.spring.rabbitmq.command.queue>maas_dev_command_queue</maven.spring.rabbitmq.command.queue>
-				<maven.spring.rabbitmq.evaluation.queue>maas_dev_evaluation_queue</maven.spring.rabbitmq.evaluation.queue>
-				<maven.spring.rabbitmq.modelsync.queue>maas_dev_modelsync_queue</maven.spring.rabbitmq.modelsync.queue>
-				<!--				<maven.data.mongodb.url>mongodb://127.0.0.1:27017/maas</maven.data.mongodb.url>-->
-				<maven.data.mongodb.url>mongodb://192.168.1.240:32008/maas</maven.data.mongodb.url>
-				<maven.virtualbox.secret.appkey>8a44653e-c466-4c91-9d18-c9235430dd27</maven.virtualbox.secret.appkey>
-				<maven.virtualbox.server.address>http://192.168.8.76:8002</maven.virtualbox.server.address>
+
+				<maven.spring.rabbitmq.modelapp.queue>maas_github_modelapp_queue</maven.spring.rabbitmq.modelapp.queue>
+				<maven.spring.rabbitmq.plan.queue>maas_github_plan_queue</maven.spring.rabbitmq.plan.queue>
+				<maven.spring.rabbitmq.command.queue>maas_github_command_queue</maven.spring.rabbitmq.command.queue>
+				<maven.spring.rabbitmq.evaluation.queue>maas_github_evaluation_queue</maven.spring.rabbitmq.evaluation.queue>
+				<maven.spring.rabbitmq.modelsync.queue>maas_github_modelsync_queue</maven.spring.rabbitmq.modelsync.queue>
 			</properties>
 		</profile>
 		<profile>
@@ -230,10 +118,10 @@
 				<activeByDefault>false</activeByDefault>
 			</activation>
 			<properties>
-				<maven.server.port>8080</maven.server.port>
+				<maven.server.port>8089</maven.server.port>
 				<maven.server.session.timeout>3600</maven.server.session.timeout>
 				<maven.tomcat.uriEncoding>UTF-8</maven.tomcat.uriEncoding>
-				<maven.spring.cross.allow>http://localhost:8000,*,http://localhost:8080</maven.spring.cross.allow>
+				<maven.spring.cross.allow>http://localhost:8000,*,http://localhost:8089</maven.spring.cross.allow>
 				<maven.jasypt.encryptor.password>aimaas</maven.jasypt.encryptor.password>
 				<maven.db.jdbc.connection.driver><![CDATA[com.mysql.jdbc.Driver]]></maven.db.jdbc.connection.driver>
 				<maven.db.jdbc.connection.url><![CDATA[jdbc:mysql://127.0.0.1:11306/badouai_maas?characterEncoding=UTF-8&useSSL=false]]></maven.db.jdbc.connection.url>
@@ -307,14 +195,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-scratchpad</artifactId>
-			<version>4.1.2</version>
-		</dependency>
-		<dependency>
-		<groupId>javax.servlet</groupId>
-		<artifactId>javax.servlet-api</artifactId>
-		<version>3.1.0</version>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.avro</groupId>
@@ -341,11 +224,6 @@
 			<groupId>org.apache.ant</groupId>
 			<artifactId>ant</artifactId>
 			<version>1.10.5</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-ooxml</artifactId>
-			<version>4.1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
@@ -393,28 +271,6 @@
 			<version>2.0.27</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi</artifactId>
-			<version>4.1.2</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml -->
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-ooxml</artifactId>
-			<version>4.1.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-ooxml-schemas</artifactId>
-			<version>4.1.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.xmlbeans</groupId>
-			<artifactId>xmlbeans</artifactId>
-			<version>5.1.1</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-scratchpad -->
-		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.11.0</version>
@@ -429,7 +285,10 @@
 			<version>6.0.0</version>
 		</dependency>
 		<dependency>
-			<!-- jsoup HTML parser library @ http://jsoup.org/ -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
 			<version>1.15.3</version>
@@ -439,7 +298,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.gitlab/java-gitlab-api -->
 		<dependency>
 			<groupId>org.gitlab</groupId>
 			<artifactId>java-gitlab-api</artifactId>
@@ -598,49 +456,237 @@
 		<dependency>
 			<groupId>com.badou</groupId>
 			<artifactId>bdPlugin-appengine</artifactId>
-			<version>${bdPlugin.appengine.version}</version>
+			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/bdPlugin-appengine.jar</systemPath>
 		</dependency>
 
 		<dependency>
 			<groupId>com.badou</groupId>
 			<artifactId>badouFramework-starter</artifactId>
 			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/badouFramework-starter.jar</systemPath>
 		</dependency>
 
 		<dependency>
 			<groupId>com.badou</groupId>
 			<artifactId>bdPlugin-message</artifactId>
-			<version>${bdPlugin.message.version}</version>
+			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/bdPlugin-message.jar</systemPath>
 		</dependency>
 
 		<dependency>
 			<groupId>com.badou</groupId>
 			<artifactId>bdPlugin-logs</artifactId>
-			<version>4.0.2.dev.0612</version>
+			<version>${badouFramework.version}</version>
+			<!--			<version>4.0.2.dev.0612</version>-->
 			<exclusions>
 				<exclusion>
 					<groupId>com.badou</groupId>
 					<artifactId>badouFramework-infrastructure</artifactId>
 				</exclusion>
 			</exclusions>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/bdPlugin-logs.jar</systemPath>
 		</dependency>
 
 		<dependency>
 			<groupId>com.badou</groupId>
 			<artifactId>bdPlugin-report</artifactId>
-			<version>${bdPlugin.report.version}</version>
+			<version>${badouFramework.version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.badou</groupId>
 					<artifactId>badouFramework-infrastructure</artifactId>
 				</exclusion>
 			</exclusions>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/bdPlugin-report.jar</systemPath>
 		</dependency>
 
 		<dependency>
 			<groupId>com.badou</groupId>
 			<artifactId>bdPlugin-uniapp-manager</artifactId>
-			<version>${bdPlugin.uniapp.manager.version}</version>
+			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/bdPlugin-uniapp-manager.jar</systemPath>
+		</dependency>
+
+		<dependency>
+			<groupId>com.badou</groupId>
+			<artifactId>badouFramework-infrastructure</artifactId>
+			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/badouFramework-infrastructure.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.badou</groupId>
+			<artifactId>bdPlugin-database</artifactId>
+			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/bdPlugin-database.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.badou</groupId>
+			<artifactId>bdPlugin-bpms</artifactId>
+			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/bdPlugin-bpms.jar</systemPath>
+		</dependency>
+
+		<dependency>
+			<groupId>com.badou</groupId>
+			<artifactId>badouFramework-tools</artifactId>
+			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/badouFramework-tools.jar</systemPath>
+		</dependency>
+
+		<dependency>
+			<groupId>com.badou</groupId>
+			<artifactId>badouFramework-core</artifactId>
+			<version>${badouFramework.version}</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/badouFramework-core.jar</systemPath>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
+		<!-- Jedis客户端（需排除Lettuce） -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>io.lettuce</groupId>
+					<artifactId>lettuce-core</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<version>3.6.2</version> <!-- 兼容Spring Boot 2.0.x -->
+		</dependency>
+		<dependency>
+			<groupId>cn.hutool</groupId>
+			<artifactId>hutool-all</artifactId>
+			<version>4.5.7</version>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>fastjson</artifactId>
+			<version>1.2.83</version>
+		</dependency>
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>2.7.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>2.7.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.json-lib</groupId>
+			<artifactId>json-lib</artifactId>
+			<version>2.4</version>
+			<classifier>jdk15</classifier>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-net</groupId>
+			<artifactId>commons-net</artifactId>
+			<version>3.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.4</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-fileupload</groupId>
+			<artifactId>commons-fileupload</artifactId>
+			<version>1.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>${hibernate.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>xml-apis</artifactId>
+					<groupId>xml-apis</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>${hibernate.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>xml-apis</artifactId>
+					<groupId>xml-apis</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt</artifactId>
+			<version>0.9.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
+		<!-- Apache POI 核心库 (支持.xls/.doc) -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>5.2.5</version> <!-- 截至2025年8月最新稳定版 -->
+		</dependency>
+
+		<!-- POI OOXML 支持 (处理.xlsx/.docx) -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.2.5</version>
+		</dependency>
+
+		<!-- 旧版Word格式支持 (.doc) -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-scratchpad</artifactId>
+			<version>5.2.5</version>
+		</dependency>
+
+		<!-- XML Beans 依赖 (POI必需) -->
+		<dependency>
+			<groupId>org.apache.xmlbeans</groupId>
+			<artifactId>xmlbeans</artifactId>
+			<version>5.2.0</version> <!-- 兼容版本 -->
 		</dependency>
 
 
@@ -698,7 +744,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-tomcat</artifactId>
-			<!--				<scope>provided</scope>-->
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -720,6 +765,191 @@
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- proxool -->
+		<dependency>
+			<groupId>proxool</groupId>
+			<artifactId>proxool-cglib</artifactId>
+			<version>0.9.1</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/proxool-cglib-0.9.1.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>proxool</groupId>
+			<artifactId>proxool</artifactId>
+			<version>0.9.1</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/proxool-0.9.1.jar</systemPath>
+		</dependency>
+		<!-- proxool end -->
+
+		<!-- poi -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>${poi.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${poi.version}</version>
+		</dependency>
+		<!-- poi end -->
+
+		<!-- jxl -->
+		<dependency>
+			<groupId>net.sourceforge.jexcelapi</groupId>
+			<artifactId>jxl</artifactId>
+			<version>2.6.12</version>
+			<exclusions>
+				<exclusion>
+					<groupId>log4j</groupId>
+					<artifactId>log4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- jxl end -->
+
+		<!-- itextpdf -->
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>kernel</artifactId>
+			<version>7.0.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>layout</artifactId>
+			<version>7.0.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>io</artifactId>
+			<version>7.0.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>font-asian</artifactId>
+			<version>7.0.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- itextpdf end -->
+
+		<!-- fastDFS相关依赖包 -->
+		<dependency>
+			<groupId>org.csource.fastdfs</groupId>
+			<artifactId>fastdfs_client</artifactId>
+			<version>1.2.4</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/fastdfs_client-1.2.4.jar</systemPath>
+		</dependency>
+		<!-- fastDFS相关依赖包 END-->
+
+		<!-- memcache START -->
+		<dependency>
+			<groupId>jgroups</groupId>
+			<artifactId>jgroups-all</artifactId>
+			<version>2.4.1</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>bsh</artifactId>
+					<groupId>bsh</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>log4j</artifactId>
+					<groupId>log4j</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- memcache END -->
+
+		<!-- redis START-->
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-pool2</artifactId>
+		</dependency>
+		<!-- redis END-->
+
+		<!-- jsch START -->
+		<dependency>
+			<groupId>com.jcraft</groupId>
+			<artifactId>jsch</artifactId>
+			<version>0.1.52</version>
+		</dependency>
+		<!-- jsch END -->
+
+		<dependency>
+			<groupId>commons-configuration</groupId>
+			<artifactId>commons-configuration</artifactId>
+			<version>1.9</version>
+		</dependency>
+
+		<!-- jdom -->
+		<dependency>
+			<groupId>jdom</groupId>
+			<artifactId>jdom</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<!-- jdom end -->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.github.tobato/fastdfs-client -->
+		<dependency>
+			<groupId>com.github.tobato</groupId>
+			<artifactId>fastdfs-client</artifactId>
+			<version>1.26.6</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.security.oauth.boot</groupId>
 			<artifactId>spring-security-oauth2-autoconfigure</artifactId>
@@ -730,12 +960,51 @@
 			<version>7.2.0</version>
 			<scope>test</scope>
 		</dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.1.3.Final</version>
-        </dependency>
-    </dependencies>
+		<dependency>
+			<groupId>com.googlecode.aviator</groupId>
+			<artifactId>aviator</artifactId>
+			<version>2.3.3</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpmime</artifactId>
+			<version>4.4.1</version>
+		</dependency>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-all</artifactId>
+			<version>4.1.3.Final</version>
+		</dependency>
+
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+		</dependency>
+		<!-- sqlServer START -->
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>sqljdbc4</artifactId>
+			<version>4.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.jtds</groupId>
+			<artifactId>jtds</artifactId>
+			<version>1.3.1</version>
+		</dependency>
+		<!-- sqlServer END -->
+		<dependency>
+			<groupId>org.quartz-scheduler</groupId>
+			<artifactId>quartz</artifactId>
+			<version>2.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>1.4.7</version>
+		</dependency>
+	</dependencies>
 
 	<dependencyManagement>
 		<dependencies>
@@ -752,13 +1021,7 @@
 	<build>
 		<finalName>${project.name}</finalName>
 		<resources>
-			<resource>
-				<directory>lib</directory>
-				<targetPath>/BOOT-INF/lib/</targetPath>
-				<includes>
-					<include>**/*.jar</include>
-				</includes>
-			</resource>
+			<!-- 保留您原有的资源定义 -->
 			<resource>
 				<directory>src/main/resources/</directory>
 				<filtering>true</filtering>
@@ -769,6 +1032,34 @@
 			</resource>
 		</resources>
 		<plugins>
+			<!-- 1. 关键修改：添加资源复制插件 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.2.0</version>
+				<executions>
+					<execution>
+						<id>copy-lib-jars</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF/lib</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/lib</directory>
+									<includes>
+										<include>*.jar</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- 2. 保留您原有的Spring Boot插件配置 -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -783,6 +1074,8 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<!-- 3. 保留您原有的其他插件配置 -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
@@ -791,7 +1084,7 @@
 					<configLocation>src/main/resources/checkstyle/${checkstyle.config.location}</configLocation>
 				</configuration>
 			</plugin>
-			<!-- 增加在配置文件中支持@符号的配置 -->
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -808,6 +1101,7 @@
 					</nonFilteredFileExtensions>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
@@ -816,6 +1110,7 @@
 					<failOnMissingWebXml>false</failOnMissingWebXml>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
@@ -827,17 +1122,6 @@
 	</build>
 
 	<repositories>
-		<repository>
-			<id>sdFramework-public</id>
-			<url>http://mvnrepository.badousoft.com/nexus/content/groups/public/</url>
-<!--			<url>http://192.168.1.240:32767/repository/public/</url>-->
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</repository>
 		<repository>
 			<id>spring-milestones</id>
 			<name>Spring Milestones</name>

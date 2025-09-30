@@ -4,24 +4,37 @@ import com.alibaba.fastjson.JSONObject;
 import com.badou.brms.dboperation.query.QueryCriterion;
 import com.badou.brms.dboperation.query.QueryOperSymbolEnum;
 import com.badou.brms.dboperation.query.support.QueryHibernatePlaceholderParam;
+import com.badou.brms.dictionary.DictionaryLib;
+import com.badou.brms.dictionary.form.DictionaryCacheObject;
 import com.badou.core.runtime.thread.local.LogonCertificate;
 import com.badou.core.runtime.thread.local.LogonCertificateHolder;
+import com.badou.project.CommonConst;
 import com.badou.project.GlobalConsts;
+import com.badou.project.common.webparams.GlobalConstans;
 import com.badou.project.common.webparams.util.DateUtil;
+import com.badou.project.kubernetes.client.KubernetesApiClient;
+import com.badou.project.kubernetes.handler.KubernetesPodHandler;
+import com.badou.project.kubernetes.handler.KubernetesServiceHandler;
+import com.badou.project.kubernetes.vo.DeployAppVo;
 import com.badou.project.maas.MaasConst;
 import com.badou.project.maas.StopCenter;
+import com.badou.project.maas.common.FileControllerService;
 import com.badou.project.maas.evaluationinstan.model.EvaluationInstanEntity;
 import com.badou.project.maas.evaluationinstan.model.EvaluationInstanqEntity;
 import com.badou.project.maas.evaluationinstan.model.EvaluationMqEntity;
 import com.badou.project.maas.evaluationinstan.service.IEvaluationInstanService;
 import com.badou.project.maas.evaluationinstan.service.IEvaluationInstanqService;
+import com.badou.project.maas.k8sport.service.IK8sPortService;
 import com.badou.project.maas.modelapp.model.ModelAppEntity;
 import com.badou.project.maas.modelapp.model.TalkEntity;
 import com.badou.project.maas.modelapp.service.IModelAppService;
+import com.badou.project.maas.tuningevaluationn.service.ITuningEvaluationnService;
 import com.badou.project.maas.tuningmodeln.model.TuningModelnEntity;
 import com.badou.project.maas.tuningmodeln.service.ITuningModelnService;
 import com.badou.project.maas.tuningprogramqueue.service.ITuningProgramQueueService;
+import com.badou.project.mq.util.RabbitMqUtil;
 import com.badou.tools.common.util.StringUtils;
+import io.kubernetes.client.openapi.models.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -29,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -177,46 +191,47 @@ public class EvaluationMqReceiver implements IBaseTaskMqReceiver{
             params.put("contents",row);
 
 //            JSONObject jsonObject = apiHelperService.talkWithAi(TaskMqConst.AI_TIP_ANSWER_QUSTION, params, evaluationInstanEntity.getAssistantId());
+            JSONObject jsonObject = null;
             //判断是否对话失败
-//            if (Objects.isNull(jsonObject) ||
-//                    !jsonObject.containsKey("hasOk") ||
-//                    !jsonObject.getBoolean("hasOk") || jsonObject.getJSONObject("bean") == null) {
-//                updateFail(evaluationInstanEntity,"执行对话失败!"+jsonObject);
-//                return;
-//            }
-//            JSONObject bean = jsonObject.getJSONObject("bean");
-//            String replyContent = bean.getString("replyContent");
-//            replyContent = replyContent.replace("]","");
-//            replyContent = replyContent.replace("[","");
-//            Double score = 0.0;
-//            System.out.println(calcScore);
-//            System.out.println(evaluationInstanEntity.getId());
-//            if(StringUtils.isNotEmpty(replyContent)){
-//                try {
-//                    score = Double.parseDouble(replyContent);
-//                    nowScore = calcScore.get(evaluationInstanEntity.getId());
-//                    if (nowScore==null){
-//                        nowScore = 0.0;
-//                    }
-//                    calcScore.put(evaluationInstanEntity.getId(),nowScore+score);
-//                }catch (Exception e){
-//                    System.out.println(replyContent);
-//                    e.printStackTrace();
-//                    updateFail(evaluationInstanEntity,"转换出错!"+e.getMessage()+",问题:"+question);
-//                    return;
-//                }
-//            }
+            if (Objects.isNull(jsonObject) ||
+                    !jsonObject.containsKey("hasOk") ||
+                    !jsonObject.getBoolean("hasOk") || jsonObject.getJSONObject("bean") == null) {
+                updateFail(evaluationInstanEntity,"执行对话失败!"+jsonObject);
+                return;
+            }
+            JSONObject bean = jsonObject.getJSONObject("bean");
+            String replyContent = bean.getString("replyContent");
+            replyContent = replyContent.replace("]","");
+            replyContent = replyContent.replace("[","");
+            Double score = 0.0;
+            System.out.println(calcScore);
+            System.out.println(evaluationInstanEntity.getId());
+            if(StringUtils.isNotEmpty(replyContent)){
+                try {
+                    score = Double.parseDouble(replyContent);
+                    nowScore = calcScore.get(evaluationInstanEntity.getId());
+                    if (nowScore==null){
+                        nowScore = 0.0;
+                    }
+                    calcScore.put(evaluationInstanEntity.getId(),nowScore+score);
+                }catch (Exception e){
+                    System.out.println(replyContent);
+                    e.printStackTrace();
+                    updateFail(evaluationInstanEntity,"转换出错!"+e.getMessage()+",问题:"+question);
+                    return;
+                }
+            }
             //如果是null就直接结束  允许空结果
-//            if(replyContent == null){
-//                updateFail(evaluationInstanEntity,"存在空结果");
-//                return;
-//            }
-//            log.info("问题:"+question+",标准答案:"+standardAnswer+",回复:"+feedback+",评分:"+score);
-//            evaluationInstanqEntity.setFeedback(feedback);
-//            evaluationInstanqEntity.setAnswerScore(score);
-//            evaluationInstanqEntity.setInstanq(evaluationInstanEntity.getId());
-//            evaluationInstanqEntity.setEvaFlag(GlobalConsts.ONE);
-//            evaluationInstanqService.update(evaluationInstanqEntity);
+            if(replyContent == null){
+                updateFail(evaluationInstanEntity,"存在空结果");
+                return;
+            }
+            log.info("问题:"+question+",标准答案:"+standardAnswer+",回复:"+feedback+",评分:"+score);
+            evaluationInstanqEntity.setFeedback(feedback);
+            evaluationInstanqEntity.setAnswerScore(score);
+            evaluationInstanqEntity.setInstanq(evaluationInstanEntity.getId());
+            evaluationInstanqEntity.setEvaFlag(GlobalConsts.ONE);
+            evaluationInstanqService.update(evaluationInstanqEntity);
         }catch (Exception e){
             e.printStackTrace();
             updateFail(evaluationInstanEntity,"评价失败!"+e.getMessage());

@@ -9,8 +9,6 @@ import org.apache.poi.xwpf.usermodel.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.hwpf.HWPFDocument;
-import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
@@ -147,20 +145,20 @@ public class FileContentExtractor {
 
     // 老版本 Word 文档处理（.doc 格式）
     private static String extractContentFromOldWord(byte[] fileData) throws IOException {
-        StringBuilder content = new StringBuilder();
-        ByteArrayInputStream bis = new ByteArrayInputStream(fileData);
-        HWPFDocument document = new HWPFDocument(bis);
-        WordExtractor extractor = new WordExtractor(document);
-        // 提取正文文本
-        String[] paragraphs = extractor.getParagraphText();
-        for (String paragraph : paragraphs) {
-            content.append(paragraph.trim()).append("\n");
-        }
-
-        // 这里可以进一步扩展对表格等元素的处理
-        // 目前仅提取了段落文本
-
-        return content.toString();
+//        StringBuilder content = new StringBuilder();
+//        ByteArrayInputStream bis = new ByteArrayInputStream(fileData);
+//        HWPFDocument document = new HWPFDocument(bis);
+//        WordExtractor extractor = new WordExtractor(document);
+//        // 提取正文文本
+//        String[] paragraphs = extractor.getParagraphText();
+//        for (String paragraph : paragraphs) {
+//            content.append(paragraph.trim()).append("\n");
+//        }
+//
+//        // 这里可以进一步扩展对表格等元素的处理
+//        // 目前仅提取了段落文本
+//
+        return null;
     }
 
     // PDF文档处理
@@ -201,19 +199,20 @@ public class FileContentExtractor {
         if (cell == null) {
             return "";
         }
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue().trim();
-            case NUMERIC:
-//                return DataFormatter.getInstance().formatCellValue(cell);
-                return cell.getStringCellValue().trim();
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
-                return handleFormulaCell(cell);
-            default:
-                return "";
-        }
+//        switch (cell.getCellType()) {
+//            case STRING:
+//                return cell.getStringCellValue().trim();
+//            case NUMERIC:
+////                return DataFormatter.getInstance().formatCellValue(cell);
+//                return cell.getStringCellValue().trim();
+//            case BOOLEAN:
+//                return String.valueOf(cell.getBooleanCellValue());
+//            case FORMULA:
+//                return handleFormulaCell(cell);
+//            default:
+//                return "";
+//        }
+        return null;
     }
 
     // 处理公式单元格（获取计算结果）

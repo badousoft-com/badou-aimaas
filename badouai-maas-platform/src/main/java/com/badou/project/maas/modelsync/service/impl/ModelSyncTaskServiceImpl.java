@@ -1,5 +1,6 @@
 package com.badou.project.maas.modelsync.service.impl;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 
@@ -13,26 +14,30 @@ import com.badou.brms.dictionary.DictionaryLib;
 import com.badou.brms.dictionary.form.DictionaryCacheObject;
 import com.badou.core.runtime.thread.local.LogonCertificateHolder;
 import com.badou.project.GlobalConsts;
+import com.badou.project.common.webparams.GlobalConstans;
 import com.badou.project.common.webparams.util.JsonResultUtil;
 import com.badou.project.exception.DataEmptyException;
+import com.badou.project.exception.DataValidException;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.kubernetes.client.KubernetesApiClientFactory;
-import com.badou.project.kubernetes.handler.KubernetesExecHandler;
 import com.badou.project.kubernetes.handler.KubernetesNameSpaceHandler;
 import com.badou.project.kubernetes.handler.KubernetesPodHandler;
 import com.badou.project.kubernetes.handler.KubernetesYamlHandler;
+import com.badou.project.kubernetes.handler.impl.KubernetesExecHandlerImpl;
 import com.badou.project.kubernetes.util.StringHandlerUtil;
 import com.badou.project.maas.MaasConst;
 import com.badou.project.maas.common.FileControllerService;
 import com.badou.project.maas.modelsync.util.StringUtil;
 import com.badou.project.maas.modelwarehouse.model.ModelWarehouseEntity;
 import com.badou.project.maas.modelwarehouse.service.IModelWarehouseService;
+import com.badou.project.mq.ModelSyncTaskMqReceiver;
 import com.badou.project.mq.TaskMqSender;
 import com.badou.project.server.model.K8sServerConfEntity;
 import com.badou.project.server.service.IK8sServerConfService;
 import com.badou.project.server.web.ServerGpuListAction;
 import com.badou.tools.common.util.SpringHelper;
 import com.badou.tools.common.util.StringUtils;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Pod;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -57,7 +62,7 @@ public class ModelSyncTaskServiceImpl extends BaseSpringService<ModelSyncTaskEnt
 	@Autowired
 	private KubernetesPodHandler kubernetesPodHandler;
 	@Autowired
-	private KubernetesExecHandler kubernetesExecHandler;
+	private KubernetesExecHandlerImpl kubernetesExecHandler;
 	@Autowired
 	private IK8sServerConfService k8sServerConfService;
 	@Autowired
@@ -72,6 +77,8 @@ public class ModelSyncTaskServiceImpl extends BaseSpringService<ModelSyncTaskEnt
 	private TaskMqSender taskMqSender;
 	@Autowired
 	private IModelWarehouseService modelWarehouseService;
+	@Autowired
+	private ModelSyncTaskMqReceiver modelSyncTaskMqReceiver;
 
 	@Autowired
 	public void setModelSyncTaskDAO(IModelSyncTaskDAO modelSyncTaskDAO) {
@@ -140,7 +147,7 @@ public class ModelSyncTaskServiceImpl extends BaseSpringService<ModelSyncTaskEnt
 				if (b){
 					return "磁盘已达到安全存储要求范围.任务拒绝,请联系管理员!";
 				}
-				kubernetesNameSpaceHandler.createNameSpace(kubernetesApiClient,MaasConst.MODEL_SYNC_NS);
+				kubernetesNameSpaceHandler.createNameSpace(kubernetesApiClient,MaasConst.MODEL_SYNC_NS,null,null);
 			}catch (Exception e){
 				e.printStackTrace();
 				return "检查状态异常!请联系管理员!";
@@ -174,23 +181,23 @@ public class ModelSyncTaskServiceImpl extends BaseSpringService<ModelSyncTaskEnt
 
 	@Override
 	public void closeTask(ModelSyncTaskEntity modelSyncTaskEntity) {
-//		if (GlobalConsts.ZERO.equals(modelSyncTaskEntity.getType())){
-//            try {
-//                KubernetesApiClient kubernetesApiClient = FileControllerService.getCustomClient(modelSyncTaskEntity.getServerIds());
-//				V1Pod pod = kubernetesPodHandler.getPod(kubernetesApiClient, MaasConst.MODEL_SYNC_NS, modelSyncTaskEntity.getCode());
-//				if (pod!=null){
-//					//当移除模型同步时 也会把已下载的模型进度也移除 无论下载进度如何
-//					kubernetesPodHandler.deleteOnePod(kubernetesApiClient, MaasConst.MODEL_SYNC_NS, modelSyncTaskEntity.getCode());
-//					K8sServerConfEntity server = kubernetesApiClient.getServer();
-//					fileControllerService.execModelCommand(server,new String[]{"rm","-rf",server.getModelPaths()+"/"+modelSyncTaskEntity.getTargetObject().split("/")[0]});
-//				}
-//				modelSyncTaskMqReceiver.getRunningMap().remove(modelSyncTaskEntity.getTargetObject());
-//			} catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
-//		modelSyncTaskEntity.setStatus(MaasConst.DOPLAN_CLOSE_STATUS);
-//		update(modelSyncTaskEntity);
+		if (GlobalConsts.ZERO.equals(modelSyncTaskEntity.getType())){
+            try {
+                KubernetesApiClient kubernetesApiClient = FileControllerService.getCustomClient(modelSyncTaskEntity.getServerIds());
+				V1Pod pod = kubernetesPodHandler.getPod(kubernetesApiClient, MaasConst.MODEL_SYNC_NS, modelSyncTaskEntity.getCode());
+				if (pod!=null){
+					//当移除模型同步时 也会把已下载的模型进度也移除 无论下载进度如何
+					kubernetesPodHandler.deleteOnePod(kubernetesApiClient, MaasConst.MODEL_SYNC_NS, modelSyncTaskEntity.getCode());
+					K8sServerConfEntity server = kubernetesApiClient.getServer();
+					fileControllerService.execModelCommand(server,new String[]{"rm","-rf",server.getModelPaths()+"/"+modelSyncTaskEntity.getTargetObject().split("/")[0]});
+				}
+				modelSyncTaskMqReceiver.getRunningMap().remove(modelSyncTaskEntity.getTargetObject());
+			} catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+		modelSyncTaskEntity.setStatus(MaasConst.DOPLAN_CLOSE_STATUS);
+		update(modelSyncTaskEntity);
 	}
 
 	@Override
@@ -202,38 +209,38 @@ public class ModelSyncTaskServiceImpl extends BaseSpringService<ModelSyncTaskEnt
 	@Override
 	public void updateTaskSuccess(ModelSyncTaskEntity modelSyncTaskEntity, String msg) {
 		//在成功或者失败的时候 都增加执行日志
-//		if (StringUtils.isEmpty(msg)){
-//			msg = "下载完成!已转成本地模型!";
-//		}
-//		//查询本次同步模型容量
-//		try {
-//			SpringHelper.getBean(ServerGpuListAction.class).buildModelSize(modelSyncTaskEntity.getTargetObject(),modelSyncTaskEntity.getServerIds());
-//		} catch (Exception e) {
-//			throw new RuntimeException(e);
-//		}
-//		modelSyncTaskEntity.setExecMsg(msg);
-//		modelSyncTaskEntity.setExecPercentage(100);
-//		modelSyncTaskEntity.setFinishTime(new Date());
-//		modelSyncTaskEntity.setStatus(MaasConst.DOPLAN_SUCCESS_STATUS);
-//		modelSyncTaskDAO.update(modelSyncTaskEntity);
-//		modelSyncTaskMqReceiver.getRunningMap().remove(modelSyncTaskEntity.getTargetObject());
+		if (StringUtils.isEmpty(msg)){
+			msg = "下载完成!已转成本地模型!";
+		}
+		//查询本次同步模型容量
+		try {
+			SpringHelper.getBean(ServerGpuListAction.class).buildModelSize(modelSyncTaskEntity.getTargetObject(),modelSyncTaskEntity.getServerIds());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		modelSyncTaskEntity.setExecMsg(msg);
+		modelSyncTaskEntity.setExecPercentage(100);
+		modelSyncTaskEntity.setFinishTime(new Date());
+		modelSyncTaskEntity.setStatus(MaasConst.DOPLAN_SUCCESS_STATUS);
+		modelSyncTaskDAO.update(modelSyncTaskEntity);
+		modelSyncTaskMqReceiver.getRunningMap().remove(modelSyncTaskEntity.getTargetObject());
 	}
 
 	@Override
 	public void updateTaskFail(ModelSyncTaskEntity modelSyncTaskEntity, String msg) {
-//		modelSyncTaskEntity.setExecMsg(msg);
-//		modelSyncTaskEntity.setStatus(MaasConst.DOPLAN_FAIL_STATUS);
-//		modelSyncTaskDAO.update(modelSyncTaskEntity);
-//		modelSyncTaskMqReceiver.getRunningMap().remove(modelSyncTaskEntity.getTargetObject());
-//		K8sServerConfEntity server = null;
-//        try {
-//			//当任务失败时 移除已下载的资源
-//            server = FileControllerService.getCustomClient(modelSyncTaskEntity.getServerIds()).getServer();
-//			//不删父目录 只删子目录
-//			fileControllerService.execModelCommand(server,new String[]{"rm","-rf",server.getModelPaths()+"/"+modelSyncTaskEntity.getTargetObject()});
-//		} catch (Exception e) {
-//            e.printStackTrace();
-//        }
+		modelSyncTaskEntity.setExecMsg(msg);
+		modelSyncTaskEntity.setStatus(MaasConst.DOPLAN_FAIL_STATUS);
+		modelSyncTaskDAO.update(modelSyncTaskEntity);
+		modelSyncTaskMqReceiver.getRunningMap().remove(modelSyncTaskEntity.getTargetObject());
+		K8sServerConfEntity server = null;
+        try {
+			//当任务失败时 移除已下载的资源
+            server = FileControllerService.getCustomClient(modelSyncTaskEntity.getServerIds()).getServer();
+			//不删父目录 只删子目录
+			fileControllerService.execModelCommand(server,new String[]{"rm","-rf",server.getModelPaths()+"/"+modelSyncTaskEntity.getTargetObject()});
+		} catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 
 	@Override

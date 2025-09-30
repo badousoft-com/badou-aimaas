@@ -6,6 +6,8 @@ import java.util.List;
 import com.alibaba.fastjson.JSONObject;
 import com.badou.brms.base.support.spring.IBaseSpringService;
 import com.badou.brms.base.support.struts.JsonReturnBean;
+import com.badou.project.exception.DataEmptyException;
+import com.badou.project.exception.DataValidException;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.maas.modelapp.model.ModelAppEntity;
 import com.badou.project.maas.modelapp.model.TalkEntity;
@@ -71,7 +73,7 @@ public interface IModelAppService extends IBaseSpringService<ModelAppEntity, Ser
      * @param id
      * @return
      */
-    Object loadApiMsg(String id);
+    Object loadApiMsg(String id) throws DataEmptyException, DataValidException;
 
     /**
      * 通过应用主键 获取与该应用关联的模型结果

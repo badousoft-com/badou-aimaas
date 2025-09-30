@@ -1,6 +1,7 @@
 package com.badou.project.gpucalc;
 
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.badou.project.exception.DataValidException;
 import com.badou.project.gpucalc.model.MultipleServersConfig;
 import com.badou.project.maas.trainplan.model.TrainPlanEntity;
@@ -29,8 +30,8 @@ public class DefaultGpuHandler extends BaseGpuCalcHandler implements GpuCalcHand
             if (StringUtils.isNotBlank(tuningModelnEntity.getExecGpuCard()) && tuningModelnEntity.getMultipleServersConfigs().size() == 0) {
                 tuningModelnEntity.setMultipleServersConfigs(JSONArray.parseArray(tuningModelnEntity.getExecGpuCard(), MultipleServersConfig.class));
             }
-            log.info("显卡信息->"+tuningModelnEntity.getMultipleServersConfigs());
-            if (tuningModelnEntity.getMultipleServersConfigs().size() == 0 || tuningModelnEntity.getMultipleServersConfigs().get(0).getCanGpuCardNoMap().size()>1) {
+            log.info("显卡信息->"+ JSONObject.toJSONString(tuningModelnEntity.getMultipleServersConfigs()));
+            if (tuningModelnEntity.getMultipleServersConfigs().size() == 0) {
                 throw new DataValidException("未实际分配正确的显卡信息");
             }
             if (tuningModelnEntity.getMultipleServersConfigs().size() == 1) {

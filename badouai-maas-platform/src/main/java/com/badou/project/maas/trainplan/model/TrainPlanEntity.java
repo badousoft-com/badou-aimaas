@@ -19,6 +19,18 @@ import javax.persistence.Table;
 public class TrainPlanEntity extends AppBaseEntity {
 
     /**
+     * 模型市场文根 用来下载ModelScope模型使用
+     */
+    @Column(name = "custom_gpu_card", unique = false, nullable = true, insertable = true, updatable = true)
+    protected String customGpuCard;
+
+    /**
+     * 模型市场文根 用来下载ModelScope模型使用
+     */
+    @Column(name = "custom_gpu_card_name", unique = false, nullable = true, insertable = true, updatable = true)
+    protected String customGpuCardName;
+
+    /**
      * 偏好对齐方法·
      */
     @Column(name = "rlhf_way", unique = false, nullable = true, insertable = true, updatable = true)
@@ -950,6 +962,22 @@ public class TrainPlanEntity extends AppBaseEntity {
      */
     public void setDoStatus(Integer doStatus) {
         this.doStatus = doStatus;
+    }
+
+    public String getCustomGpuCard() {
+        return customGpuCard;
+    }
+
+    public void setCustomGpuCard(String customGpuCard) {
+        this.customGpuCard = customGpuCard;
+    }
+
+    public String getCustomGpuCardName() {
+        return customGpuCardName;
+    }
+
+    public void setCustomGpuCardName(String customGpuCardName) {
+        this.customGpuCardName = customGpuCardName;
     }
 
     @Override

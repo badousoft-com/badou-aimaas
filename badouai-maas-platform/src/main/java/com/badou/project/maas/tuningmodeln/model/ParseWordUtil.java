@@ -1,10 +1,9 @@
 package com.badou.project.maas.tuningmodeln.model;
 
 import com.badou.tools.memcached.Logger;
-import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.usermodel.*;
-import org.apache.xmlbeans.XmlException;
+
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
 
 import java.io.*;

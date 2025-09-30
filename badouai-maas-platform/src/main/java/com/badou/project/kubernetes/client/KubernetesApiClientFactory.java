@@ -24,12 +24,12 @@ public class KubernetesApiClientFactory {
     public static Map<String, K8sServerConfEntity> k8sConfigCache = new HashMap<>();
 
     public static KubernetesApiClient build(K8sServerConfEntity k8sServerConfEntity) throws Exception {
-        String key = k8sServerConfEntity.getAddress()+":"+k8sServerConfEntity.getPort()+k8sServerConfEntity.getAuthType();
+        String key = k8sServerConfEntity.getAddress()+":"+k8sServerConfEntity.getPort();
         KubernetesApiClient cacheClient = clientCache.get(key);
         if(cacheClient == null){
             KubernetesApiClient kubernetesApiClient = new KubernetesApiClient(k8sServerConfEntity);
             if(kubernetesApiClient.getApiClient() == null){
-                throw new Exception("获取不到api客户端");
+                throw new Exception("初始化失败!请联系管理员!");
             }
             clientCache.put(key,kubernetesApiClient);
             return kubernetesApiClient;
@@ -39,6 +39,23 @@ public class KubernetesApiClientFactory {
         }
         k8sConfigCache.put(k8sServerConfEntity.getId(),k8sServerConfEntity);
         return cacheClient;
+    }
+
+    /**
+     * 构建K8S客户端缓存 无视缓存 强制刷新
+     * @param k8sServerConfEntity
+     * @return
+     * @throws Exception
+     */
+    public static KubernetesApiClient buildNoCache(K8sServerConfEntity k8sServerConfEntity) throws Exception {
+        String key = k8sServerConfEntity.getAddress()+":"+k8sServerConfEntity.getPort();
+        KubernetesApiClient kubernetesApiClient = new KubernetesApiClient(k8sServerConfEntity);
+        if(kubernetesApiClient.getApiClient() == null){
+            throw new Exception("初始化K8S失败.请确保您提供的k8s-admin.conf为正确有效的.");
+        }
+        clientCache.put(key,kubernetesApiClient);
+        k8sConfigCache.put(k8sServerConfEntity.getId(),k8sServerConfEntity);
+        return kubernetesApiClient;
     }
 
     /**

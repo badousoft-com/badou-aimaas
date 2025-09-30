@@ -1,6 +1,9 @@
 package com.badou.project.maas.trainplan.web;
 
+import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.badou.brms.attach.AttachFactory;
+import com.badou.brms.attach.service.IAttachService;
 import com.badou.brms.base.support.struts.JsonReturnBean;
 import com.badou.brms.dboperation.query.QueryCriterion;
 import com.badou.brms.dboperation.query.QueryOperSymbolEnum;
@@ -10,8 +13,11 @@ import com.badou.brms.dictionary.form.DictionaryCacheObject;
 import com.badou.brms.dictionary.form.DictionaryItemCacheObject;
 import com.badou.core.runtime.thread.local.LogonCertificateHolder;
 import com.badou.project.GlobalConsts;
+import com.badou.project.common.webparams.util.DateUtil;
 import com.badou.project.common.webparams.util.JsonResultUtil;
 import com.badou.project.exception.DataEmptyException;
+import com.badou.project.exception.DataValidException;
+import com.badou.project.kubernetes.util.StringHandlerUtil;
 import com.badou.project.maas.MaasConst;
 import com.badou.project.maas.modelwarehouse.model.ModelWarehouseEntity;
 import com.badou.project.maas.modelwarehouse.service.IModelWarehouseService;
@@ -19,6 +25,9 @@ import com.badou.project.maas.planlink.model.PlanLinkEntity;
 import com.badou.project.maas.planlink.service.IPlanLinkService;
 import com.badou.project.maas.pregpucache.model.PreGpucacheEntityEntity;
 import com.badou.project.maas.pregpucache.service.IPreGpucacheEntityService;
+import com.badou.project.maas.trainfile.event.CalcFileSizeEvent;
+import com.badou.project.maas.trainfile.model.TrainFileEntity;
+import com.badou.project.maas.trainfile.service.ITrainFileService;
 import com.badou.project.maas.trainplan.service.ITrainPlanService;
 import com.badou.project.maas.tuningevaluationn.model.TuningEvaluationnEntity;
 import com.badou.project.maas.tuningevaluationn.service.ITuningEvaluationnService;
@@ -30,8 +39,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import com.badou.designer.jdbc.common.web.BaseCommonSaveAction;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -140,11 +155,11 @@ public class TrainPlanSaveAction extends BaseCommonSaveAction {
 
     @Override
     protected void exeBeforeSave() throws Exception {
-        String evaluationName = this.custForm.getDetails().get("evaluationName")[0];
-        String preGpucache = this.custForm.getDetails().get("preGpucache")[0];
-        if (StringUtils.isEmpty(preGpucache) || "0".equals(preGpucache)){
-            throw new Exception("无效的GPU显存预估!请变更模型刷新!");
-        }
+//        String evaluationName = this.custForm.getDetails().get("evaluationName")[0];
+//        String preGpucache = this.custForm.getDetails().get("preGpucache")[0];
+//        if (StringUtils.isEmpty(preGpucache) || "0".equals(preGpucache)){
+//            throw new Exception("无效的GPU显存预估!请变更模型刷新!");
+//        }
         this.custForm.getDetails().put("modelAllName",new String[]{this.custForm.getDetails().get("modelName")[0]});
         String[] modelAllName = this.custForm.getDetails().get("modelAllName");
         if (modelAllName == null || StringUtils.isEmpty(modelAllName[0])){
@@ -153,7 +168,8 @@ public class TrainPlanSaveAction extends BaseCommonSaveAction {
 
         String serverGpuMode = this.custForm.getDetails().get("serverGpuMode")[0];
         String modelId = this.custForm.getDetails().get("modelId")[0];
-        Integer gpuCount = this.custForm.getDetails().get("gpuCount").length==0?0:Integer.parseInt(this.custForm.getDetails().get("gpuCount")[0]);
+//        Integer gpuCount = this.custForm.getDetails().get("gpuCount").length==0?0:Integer.parseInt(this.custForm.getDetails().get("gpuCount")[0]);
+        Integer gpuCount = 1;
         String name = this.custForm.getDetails().get("name")[0];
 
         String serverId = this.custForm.getDetails().get("serverId").length==0?"":this.custForm.getDetails().get("serverId")[0];
@@ -174,6 +190,18 @@ public class TrainPlanSaveAction extends BaseCommonSaveAction {
             throw new Exception("无效的模型信息");
         }
         this.custForm.getDetails().put("modelName",new String[]{modelAllName[0]});
+        if (!JsonResultUtil.arrayOneElement(this.custForm.getDetails().get("doWay"))
+                || StringUtils.isEmpty(this.custForm.getDetails().get("doWay")[0])){
+            throw new DataValidException("微调方法为必填项");
+        }
+
+        //如果微调方法是偏好类型 则需要判断偏好对齐方法是否有选择
+        if ("2".equals(this.custForm.getDetails().get("doWay")[0])){
+            if (!JsonResultUtil.arrayOneElement(this.custForm.getDetails().get("rlhfWay"))
+            || StringUtils.isEmpty(this.custForm.getDetails().get("rlhfWay")[0])) {
+                throw new DataValidException("当微调方法为偏好对齐时,必须选择偏好对齐方法");
+            }
+        }
 
 //        if (codes!=null){
 //            throw new Exception("自动设置失败!请联系管理员!");
@@ -193,31 +221,32 @@ public class TrainPlanSaveAction extends BaseCommonSaveAction {
 //        }
         //自动生成code
         //如果是要评价模型 检查助理是否可行
-        if(StringUtils.isNotEmpty(evaluationName)){
-            if(this.custForm.getDetails().get("evaluationId").length!=1){
-                throw new Exception("选择了开启评价必须选择评价的模型");
-            }
-            String evaluationId = this.custForm.getDetails().get("evaluationId").length==0?null:this.custForm.getDetails().get("evaluationId")[0];
-            String autoStartFlg = this.custForm.getDetails().get("autoStartFlg")[0].length()==0?null:this.custForm.getDetails().get("autoStartFlg")[0];
-            if(StringUtils.isEmpty(evaluationId)){
-                throw new Exception("开启了评价必须选择评价模型");
-            }
-            if(StringUtils.isEmpty(autoStartFlg) || "0".equals(autoStartFlg)){
-                throw new Exception("开启了评价必须开启自动启动");
-            }
-            //查询评价相关信息
-            QueryCriterion queryCriterion = new QueryCriterion();
-            queryCriterion.addParam(new QueryHibernatePlaceholderParam("id",evaluationId,null, QueryOperSymbolEnum.eq));
-            queryCriterion.addParam(new QueryHibernatePlaceholderParam("flgDeleted",0,null,QueryOperSymbolEnum.eq));
-            List<TuningEvaluationnEntity> tuningEvaluationnEntities = tuningEvaluationnService.find(queryCriterion);
-            if(tuningEvaluationnEntities.size()==0){
-                throw new Exception("无效的评价模型!请重新选择");
-            }
-            TuningEvaluationnEntity tuningEvaluationnEntity = tuningEvaluationnEntities.get(0);
-            JSONObject keyWord = new JSONObject();
-            try {
-                keyWord.put("who","你是");
-//                JSONObject jsonObject = apiHelperService.talkWithAi("default-who", keyWord, tuningEvaluationnEntity.getAssistantId());
+//        if(StringUtils.isNotEmpty(evaluationName)){
+//            if(this.custForm.getDetails().get("evaluationId").length!=1){
+//                throw new Exception("选择了开启评价必须选择评价的模型");
+//            }
+//            String evaluationId = this.custForm.getDetails().get("evaluationId").length==0?null:this.custForm.getDetails().get("evaluationId")[0];
+//            String autoStartFlg = this.custForm.getDetails().get("autoStartFlg")[0].length()==0?null:this.custForm.getDetails().get("autoStartFlg")[0];
+//            if(StringUtils.isEmpty(evaluationId)){
+//                throw new Exception("开启了评价必须选择评价模型");
+//            }
+//            if(StringUtils.isEmpty(autoStartFlg) || "0".equals(autoStartFlg)){
+//                throw new Exception("开启了评价必须开启自动启动");
+//            }
+//            //查询评价相关信息
+//            QueryCriterion queryCriterion = new QueryCriterion();
+//            queryCriterion.addParam(new QueryHibernatePlaceholderParam("id",evaluationId,null, QueryOperSymbolEnum.eq));
+//            queryCriterion.addParam(new QueryHibernatePlaceholderParam("flgDeleted",0,null,QueryOperSymbolEnum.eq));
+//            List<TuningEvaluationnEntity> tuningEvaluationnEntities = tuningEvaluationnService.find(queryCriterion);
+//            if(tuningEvaluationnEntities.size()==0){
+//                throw new Exception("无效的评价模型!请重新选择");
+//            }
+//            TuningEvaluationnEntity tuningEvaluationnEntity = tuningEvaluationnEntities.get(0);
+//            JSONObject keyWord = new JSONObject();
+//            try {
+//                keyWord.put("who","你是");
+////                JSONObject jsonObject = apiHelperService.talkWithAi("default-who", keyWord, tuningEvaluationnEntity.getAssistantId());
+//                JSONObject jsonObject = null;
 //                logger.error("结果"+jsonObject.toJSONString());
 //                if (Objects.isNull(jsonObject) ||
 //                        !jsonObject.containsKey("hasOk") ||
@@ -226,12 +255,12 @@ public class TrainPlanSaveAction extends BaseCommonSaveAction {
 //                }
 //                JSONObject bean = jsonObject.getJSONObject("bean");
 //                String replyContent = bean.getString("replyContent");
-            }catch (Exception e){
-                e.printStackTrace();
-                throw new Exception("评价模型服务无响应!请联系管理员!");
-            }
-            tuningEvaluationnService.find(queryCriterion);
-        }
+//            }catch (Exception e){
+//                e.printStackTrace();
+//                throw new Exception("评价模型服务无响应!请联系管理员!");
+//            }
+//            tuningEvaluationnService.find(queryCriterion);
+//        }
         if(this.custForm!=null && this.custForm.getDetails()!=null){
             String id = this.custForm.getDetails().get("id")[0];
             String tunFrame = this.custForm.getDetails().get("tunFrame")[0];

@@ -7,6 +7,7 @@ import com.badou.project.maas.modelapp.model.ModelAppEntity;
 import com.badou.project.maas.modelapp.service.IModelAppService;
 import com.badou.project.maas.modelsync.model.ModelSyncTaskEntity;
 import com.badou.project.maas.modelsync.service.IModelSyncTaskService;
+import com.badou.tools.common.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -31,7 +32,15 @@ public class ModelAppSaveAction extends BaseCommonSaveAction {
 
     @RequestMapping
     public JsonReturnBean stopApp(String id){
-        return JsonResultUtil.success(modelAppService.stopApp(id,true,null));
+        try {
+            String s = modelAppService.stopApp(id, true, null);
+            if (StringUtils.isNotBlank(s)){
+                return JsonResultUtil.errorMsg(s);
+            }
+        }catch (Exception e){
+            return JsonResultUtil.error();
+        }
+        return JsonResultUtil.success();
     }
 
     public static void main(String[] args) {

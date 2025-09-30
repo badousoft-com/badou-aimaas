@@ -1,13 +1,15 @@
 package com.badou.project.kubernetes.handler.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.badou.project.exception.DataErrorException;
 import com.badou.project.kubernetes.KubernetesConstants;
 import com.badou.project.kubernetes.config.KubernetesConfig;
 import com.badou.project.kubernetes.config.KubernetesYamlConfig;
 import com.badou.project.kubernetes.handler.KubernetesNameSpaceHandler;
 import com.badou.project.kubernetes.client.KubernetesApiClient;
-import com.badou.project.server.model.RegistryAddressEntity;
-import com.badou.project.server.service.IRegistryAddressService;
+import com.badou.project.maas.registryaddress.model.RegistryAddressEntity;
+import com.badou.project.maas.registryaddress.service.IRegistryAddressService;
+import com.badou.tools.common.util.StringUtils;
 import com.google.gson.internal.LinkedTreeMap;
 import io.kubernetes.client.Metrics;
 import io.kubernetes.client.custom.PodMetricsList;
@@ -62,6 +64,11 @@ public class KubernetesBaseNameSpaceHandlerImpl implements KubernetesNameSpaceHa
         if(Objects.isNull(used) || Objects.isNull(hard)){
             return "CPU:分配N/A,总N/A.内存:分配N/A,总N/A";
         }
+//        cpuTotal = ResourceUtil.coverCpu(hard.get("limits.cpu"));
+//        cpuUsed = ResourceUtil.coverCpu(used.get("limits.cpu"));
+//
+//        memoryTotal = ResourceUtil.coverMemory(hard.get("limits.memory"));
+//        memoryUsed = ResourceUtil.coverMemory(used.get("limits.memory"));
         return "CPU:已分配"+cpuUsed+"/总共"+cpuTotal+"----内存:已分配"+memoryUsed+"/总共"+memoryTotal;
     }
 
@@ -69,6 +76,21 @@ public class KubernetesBaseNameSpaceHandlerImpl implements KubernetesNameSpaceHa
     public V1Secret createDockerSecret(KubernetesApiClient kubernetesApiClient,String nameSpace,String secretName,String registryServerAddress,String username,String password) throws UnsupportedEncodingException, ApiException {
         String type = "kubernetes.io/dockerconfigjson";
         CoreV1Api coreV1Api = kubernetesApiClient.getCoreV1Api();
+        V1SecretList v1SecretList = coreV1Api.listNamespacedSecret(nameSpace, null, null, null,
+                null, "app=" + secretName, null, null, null, null, null);
+        if(v1SecretList.getItems()!=null && v1SecretList.getItems().size()>=1){
+            V1Secret v1Secret = v1SecretList.getItems().get(0);
+//            更新账号密码地址
+            String dockerSecret = createDockerSecret(registryServerAddress, username, password);
+            Map data = new LinkedTreeMap();
+            data.put(".dockerconfigjson",dockerSecret.getBytes("UTF-8"));
+            v1Secret.data(data);
+//            存在则更新
+            coreV1Api.replaceNamespacedSecret(v1Secret.getMetadata().getName(),nameSpace,v1Secret,null,null,null);
+            logger.info("更新密钥"+secretName+"成功");
+            return v1Secret;
+        }
+
         //2.创建密钥
         V1Secret v1Secret = new V1Secret();
         V1ObjectMeta meta = new V1ObjectMeta().name(secretName).namespace(nameSpace);
@@ -121,25 +143,30 @@ public class KubernetesBaseNameSpaceHandlerImpl implements KubernetesNameSpaceHa
     }
 
     @Override
-    public V1Namespace createNameSpace(KubernetesApiClient kubernetesApiClient,String nameSpace) throws ApiException {
-        RegistryAddressEntity registryAddressEntity = null;
-        try {
+    public V1Namespace createNameSpace(KubernetesApiClient kubernetesApiClient,String nameSpace,String secretName,RegistryAddressEntity registryAddressEntity) throws ApiException {
+        if (registryAddressEntity == null){
             registryAddressEntity = registryAddressService.getDefaultRegistryAddress();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            if (registryAddressEntity == null){
+                throw new DataErrorException("未配置默认镜像仓库!请联系管理员!");
+            }
         }
+        if (registryAddressEntity!=null && StringUtils.isNotBlank(registryAddressEntity.getKeyName())){
+            secretName = registryAddressEntity.getKeyName();
+        }
+
         V1Namespace v1Namespace = readNamespace(kubernetesApiClient, nameSpace);
         if(Objects.isNull(v1Namespace)){
             v1Namespace = new V1Namespace();
             Map<String, String> labels = new HashMap<>();
             v1Namespace.setMetadata(new V1ObjectMeta().labels(labels));
             v1Namespace.setMetadata(new V1ObjectMeta().name(nameSpace));
-          //创建命名空间
+            //创建命名空间
             v1Namespace = kubernetesApiClient.getCoreV1Api().createNamespace(v1Namespace,null,null,null);
+        }
+        if (v1Namespace!=null){
             //创建默认的镜像仓库密钥
             try {
-                createDockerSecret(kubernetesApiClient,nameSpace, KubernetesConfig.getImagePullSecrets(),
+                createDockerSecret(kubernetesApiClient,nameSpace, StringUtils.isEmpty(secretName)?KubernetesConfig.getImagePullSecrets():secretName,
                         registryAddressEntity.getAddress(),registryAddressEntity.getUserName(),registryAddressEntity.getPwd());
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
@@ -193,7 +220,12 @@ public class KubernetesBaseNameSpaceHandlerImpl implements KubernetesNameSpaceHa
     public V1LimitRange updateNameSpacePodLimit(KubernetesApiClient kubernetesApiClient,String nameSpace, String podCpuLimit, String podMemoryLimit, String podCpuRequest,
                                                 String podMemoryRequest, String resourceCpuLimit, String resourceMemoryLimit) throws ApiException {
         //转换k8s单位
+//        podMemoryLimit = ResourceUtil.coverK8sMemory(podMemoryLimit);
+//        podMemoryRequest = ResourceUtil.coverK8sMemory(podMemoryRequest);
+//        resourceMemoryLimit = ResourceUtil.coverK8sMemory(resourceMemoryLimit);
+
         V1LimitRange v1LimitRange = new V1LimitRange();
+//        v1LimitRange.setApiVersion(KubernetesYamlConfig.getApiVersion());
         v1LimitRange.setKind(KubernetesConstants.K8S_DEPLOY_LimitRange_NAME);
         v1LimitRange.setMetadata(new V1ObjectMeta().name(nameSpace
         ).namespace(nameSpace));
@@ -254,8 +286,11 @@ public class KubernetesBaseNameSpaceHandlerImpl implements KubernetesNameSpaceHa
     @Override
     public V1LimitRange setNameSpacePodLimit(KubernetesApiClient kubernetesApiClient,String nameSpace, String podCpuLimit, String podMemoryLimit, String podCpuRequest, String podMemoryRequest) throws ApiException {
         //转换k8s单位
+//        podMemoryLimit = ResourceUtil.coverK8sMemory(podMemoryLimit);
+//        podMemoryRequest = ResourceUtil.coverK8sMemory(podMemoryRequest);
 
         V1LimitRange v1LimitRange = new V1LimitRange();
+//        v1LimitRange.setApiVersion(KubernetesYamlConfig.getApiVersion());
         v1LimitRange.setKind(KubernetesConstants.K8S_DEPLOY_LimitRange_NAME);
         v1LimitRange.setMetadata(new V1ObjectMeta().name(nameSpace
         ).namespace(nameSpace));
@@ -326,6 +361,16 @@ public class KubernetesBaseNameSpaceHandlerImpl implements KubernetesNameSpaceHa
          *   {"auths":{"https://registry.badou":{"username":"xxxx","password":"xxxx","auth":"xxxx"}}}
          *   其中auth:xxxx 这里面的值由username:password加密而成,格式为:账号:密码
          */
+        //空认证处理
+        if (username == null){
+            log.info("空认证处理用户名");
+            username = "";
+        }
+        if (password == null){
+            log.info("空认证处理");
+            password = "";
+        }
+
         Map jsonObject = new LinkedHashMap();
         Map auths = new LinkedHashMap();
         Map content = new LinkedHashMap();

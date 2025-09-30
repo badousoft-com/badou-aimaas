@@ -5,17 +5,26 @@ import com.badou.project.kubernetes.client.KubernetesApiClient;
 import com.badou.project.kubernetes.vo.DeployAppVo;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.*;
-import io.swagger.models.auth.In;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * k8s pod接口类
  */
 public interface KubernetesPodHandler {
+
+    /**
+     * 统一执行容器内部命令的入口
+     * @param kubernetesApiClient k8s客户端
+     * @param nameSpace 命名空间
+     * @param v1Pod 容器对象
+     * @param commands 需要执行的命令
+     * @return
+     * @throws IOException
+     * @throws ApiException
+     */
+    String execCommand(KubernetesApiClient kubernetesApiClient,String nameSpace, V1Pod v1Pod,String[] commands) throws IOException, ApiException;
 
     /**
      * 获取一个deployment
@@ -72,10 +81,46 @@ public interface KubernetesPodHandler {
     V1Pod getOnePod(KubernetesApiClient kubernetesApiClient,String podName,String nameSpace) throws ApiException;
 
     /**
+     * 获取全部的Pod
+     */
+    V1PodList getAllPods(KubernetesApiClient kubernetesApiClient) throws ApiException;
+
+    /**
      * 根据命名空间获取Pod
      * @param nameSpace 命名空间名字
      */
     V1PodList getAllPodByNameSpace(KubernetesApiClient kubernetesApiClient,String nameSpace) throws ApiException;
+
+    /**
+     * 根据配置参数创建Deployment,不部署.用于测试
+     * @param nameSpace 命名空间 例如:default
+     * @param appName 应用名字 例如:dchapp-platform 唯一,重复会覆盖原应用
+     * @param imageName 镜像名字 例如: nginx
+     * @param imageTag 镜像标签 例如: 1.0
+     * @param replicas 副本数量 例如: 1
+     * @return 返回执行结果 成功返回结果 失败抛出异常
+     */
+    String createDeployment(KubernetesApiClient kubernetesApiClient,String nameSpace, String appName, String imageName, String imageTag, int replicas) throws Exception;
+
+    /**
+     * 根据配置参数创建Deployment并部署
+     * @param nameSpace 命名空间 例如:default
+     * @param appName 应用名字 例如:dchapp-platform 唯一,重复会覆盖原应用
+     * @param imageName 镜像名字 例如: nginx
+     * @param imageTag 镜像标签 例如: 1.0
+     * @param replicas 副本数量 例如: 1
+     * @return 返回执行结果 成功返回结果 失败抛出异常
+     */
+    String createLimitDeployment(KubernetesApiClient kubernetesApiClient,String nameSpace, String appName, String imageName, String imageTag, int replicas, V1ResourceRequirements resourceConfig) throws ApiException, ParamErrorException;
+
+    /**
+     * 创建中间件应用
+     * @param deployAppVo 部署应用信息
+     * @return
+     * @throws ApiException
+     * @throws ParamErrorException
+     */
+    String createMiddleDeployment(DeployAppVo deployAppVo) throws Exception;
 
     /**
      * 根据配置参数创建Deployment并部署
@@ -86,7 +131,19 @@ public interface KubernetesPodHandler {
      * @param testMode 是否是测试 例如: true代表是 不部署应用直接返回生成的yaml配置 false代表不是
      * @return 返回执行结果 成功返回结果 失败抛出异常
      */
-    String createDeploymentAndDeploy(KubernetesApiClient kubernetesApiClient,String nameSpace, String appCode, String imageName, int replicas, boolean testMode,String secretName,DeployAppVo deployAppVo) throws Exception;
+    String createDeploymentAndDeploy(KubernetesApiClient kubernetesApiClient,String nameSpace, String appCode, String imageName, int replicas, boolean testMode,DeployAppVo deployAppVo) throws Exception;
+
+    /**
+     * 根据配置参数创建Deployment并部署
+     * @param nameSpace 命名空间 例如:default
+     * @param appCode 应用名字 例如:dchapp-platform 唯一,重复会覆盖原应用
+     * @param imageName 镜像名字 例如: nginx:1.0
+     * @param replicas 副本数量 例如: 1
+     * @param testMode 是否是测试 例如: true代表是 不部署应用直接返回生成的yaml配置 false代表不是
+     * @return 返回执行结果 成功返回结果 失败抛出异常
+     */
+    String createLimitDeploymentAndDeploy(KubernetesApiClient kubernetesApiClient,String nameSpace, String appCode, String imageName, int replicas, boolean testMode,String secretName) throws ApiException, ParamErrorException;
+
 
     /**
      * 删除控制器
@@ -157,4 +214,12 @@ public interface KubernetesPodHandler {
      */
     String checkPodRunning(KubernetesApiClient kubernetesApiClient,String nameSpace,String deploymentName,Integer checkInterval) throws Exception;
 
+    /**
+     * 更新指定命名空间的deployment
+     * @param kubernetesApiClient k8s客户端
+     * @param nameSpace 命名空间
+     * @param deployment 部署deployment文件
+     * @return
+     */
+    String updateDeployment(KubernetesApiClient kubernetesApiClient,String nameSpace,V1Deployment deployment) throws ApiException;
 }

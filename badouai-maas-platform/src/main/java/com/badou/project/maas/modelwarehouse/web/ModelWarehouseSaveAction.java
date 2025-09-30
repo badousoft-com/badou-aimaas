@@ -11,6 +11,8 @@ import com.badou.brms.dictionary.form.DictionaryItemCacheObject;
 import com.badou.core.runtime.thread.local.LogonCertificateHolder;
 import com.badou.project.GlobalConsts;
 import com.badou.project.common.webparams.util.JsonResultUtil;
+import com.badou.project.exception.DataEmptyException;
+import com.badou.project.exception.DataValidException;
 import com.badou.project.maas.MaasConst;
 import com.badou.project.maas.modelwarehouse.model.ModelWarehouseEntity;
 import com.badou.project.maas.modelwarehouse.model.WareHouseVllmParamEntity;
@@ -49,6 +51,13 @@ public class ModelWarehouseSaveAction extends BaseCommonSaveAction {
 //                throw new Exception("暂不支持官方方式.请等待后续支持");
 //            }
 //        }
+        String[] sizes = this.custForm.getDetails().get("size");
+        if (StringUtils.isEmpty(sizes[0])){
+            throw new DataEmptyException("模型大小为必填项");
+        }
+        if (StringUtils.isNotBlank(sizes[0]) && sizes[0].contains("cannot access")){
+            throw new DataEmptyException("当前模型路径已失效.请重新选择!");
+        }
         String[] customGpuCards = this.custForm.getDetails().get("customGpuCard");
         String[] customGpuCardNames = this.custForm.getDetails().get("customGpuCardName");
         String customGpuCard = customGpuCards!=null?customGpuCards[0]:null;
@@ -103,7 +112,8 @@ public class ModelWarehouseSaveAction extends BaseCommonSaveAction {
     }
 
     @Override
-    protected void exeAfterSave() {
+    protected void exeAfterSave() throws DataEmptyException, DataValidException {
+        ModelWarehouseEntity modelWarehouseEntity = modelWarehouseService.find(this.custForm.getId());
         String deployFrameStr = this.custForm.getDetails().get("deployFrame")[0];
         if (StringUtils.isNotBlank(deployFrameStr)) {
             int deployFrame = Integer.parseInt(deployFrameStr);
@@ -127,7 +137,6 @@ public class ModelWarehouseSaveAction extends BaseCommonSaveAction {
                         dictionaryByCode.getItems().forEach(e -> {
                             //20250407 增加逻辑 如果e的编码等于ENV_MAX-MODEL-LEN 则把值赋值给实体
                             if ("ENV_MAX-MODEL-LEN".equals(e.getCode())) {
-                                ModelWarehouseEntity modelWarehouseEntity = modelWarehouseService.find(this.custForm.getId());
                                 modelWarehouseEntity.setContentLength(Double.parseDouble(e.getValue()));
                                 modelWarehouseService.update(modelWarehouseEntity);
                             }
@@ -152,8 +161,6 @@ public class ModelWarehouseSaveAction extends BaseCommonSaveAction {
                     }
                 }
             }
-
-
         }
     }
 

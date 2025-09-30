@@ -85,7 +85,7 @@ public class TrainFileServiceImpl extends BaseSpringService<TrainFileEntity, Ser
 
     @Override
     public boolean createTrainDataBYFiles(List<MultipartFile> importFile, int type, String[] ids) throws Exception {
-        asyncTask.startAnycTask(importFile, type, ids,LogonCertificateHolder.getLogonCertificate());
+//        asyncTask.startAnycTask(importFile, type, ids,LogonCertificateHolder.getLogonCertificate());
         return true;
     }
 
